@@ -1,4 +1,6 @@
 #pragma once
+#ifndef TOKEN_H
+#define TOKEN_H
 #include "TokenType.h"
 #include <variant>
 #include <iostream>
@@ -17,6 +19,7 @@ struct Token
 		line = _line;
 	}
 	std::string toString() {
-		return "type:" + enumMap[type] + " |lexeme: " + stringify(lexeme) + " |line:" + std::to_string(line);
+		return "type:" + mapToken(type) + " |lexeme: " + stringify(lexeme) + " |line:" + std::to_string(line);
 	}
 };
+#endif

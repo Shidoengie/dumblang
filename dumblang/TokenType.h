@@ -1,13 +1,12 @@
 #pragma once
-
+#ifndef TOKENTYPE_H
+#define TOKENTYPE_H
 #include <variant>
 #include <iostream>
 #include <vector>
 #include <map>
 #include <string>
 
-
-std::string enumMap[16] = { "STR", "NUM", "IDENTIFIER", "EOLN", "PLUS", "MINUS", "STAR", "SLASH", "LPAREN", "RPAREN", "EQUAL","PRINT","INPUT","EOF" };
 enum TokenType
 {
     // lieterals
@@ -32,8 +31,8 @@ enum TokenType
     INPUT,
     EOFL
 };
-std::map <std::string, TokenType> KeywordMap = {
-    {"print",PRINT},
-    {"input",INPUT}
-};
+TokenType mapKeyword(std::string keyword);
+std::map <std::string, TokenType> GetKeywordMap();
 std::string mapToken(TokenType tk);
+std::map <TokenType, std::string> GetTokenMap();
+#endif

@@ -62,8 +62,8 @@ void Scanner::identifier(char LastChar) {
 		endStr += LastChar;
 		LastChar = advance();
 	} while (isalnum(LastChar));
-	if (KeywordMap.contains(endStr)) {
-		addToken(KeywordMap[endStr],endStr);
+	if (GetKeywordMap().contains(endStr)) {
+		addToken(mapKeyword(endStr),endStr);
 	}
 	else {
 		addToken(IDENTIFIER, endStr);

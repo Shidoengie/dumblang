@@ -1,11 +1,13 @@
 #pragma once
+#ifndef SCANNER_H
+#define SCANNER_H
 #include <variant>
 #include <iostream>
 #include <vector>
 #include <map>
 #include <string>
 #include "Token.h"
-#include "TokenType.cpp"
+#include "TokenType.h"
 class Scanner
 {
 
@@ -29,3 +31,4 @@ private:
 	void getToken();
 
 };
+#endif

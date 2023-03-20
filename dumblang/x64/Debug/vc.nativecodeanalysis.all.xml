@@ -1,0 +1,14 @@
+﻿<?xml version="1.0" encoding="utf-8"?><DEFECTS><DEFECT>
+    <SFA>
+      <FILEPATH>C:\Users\AEPBS\Documents\GitHub\dumblang\dumblang\</FILEPATH>
+      <FILENAME>Token.h</FILENAME>
+      <LINE>16</LINE>
+      <COLUMN>1</COLUMN>
+    </SFA>
+    <DEFECTCODE>26812</DEFECTCODE>
+    <DESCRIPTION>The enum type 'TokenType' is unscoped. Prefer 'enum class' over 'enum' (Enum.3).</DESCRIPTION>
+    <FUNCTION>Token::{ctor}</FUNCTION>
+    <DECORATED>??0Token@@QEAA@W4TokenType@@V?$variant@NV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@std@@H@Z</DECORATED>
+    <FUNCLINE>16</FUNCLINE>
+    <PATH></PATH>
+  </DEFECT></DEFECTS>

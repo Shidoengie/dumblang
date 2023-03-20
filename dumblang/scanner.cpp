@@ -41,7 +41,7 @@ void Scanner::num(char LastChar) {
 	} while (isdigit(LastChar) || LastChar == '.');
 	current--;
 	double num = stod(numStr);
-	addToken(NUM,num);
+	addToken(TokenType::NUM,num);
 }
 
 void Scanner::str() {
@@ -54,7 +54,7 @@ void Scanner::str() {
 		endStr += LastChar;
 		LastChar = advance();
 	} while (LastChar != '"');
-	addToken(STR,endStr);
+	addToken(TokenType::STR,endStr);
 }
 void Scanner::identifier(char LastChar) {
 	std::string endStr;
@@ -66,7 +66,7 @@ void Scanner::identifier(char LastChar) {
 		addToken(mapKeyword(endStr),endStr);
 	}
 	else {
-		addToken(IDENTIFIER, endStr);
+		addToken(TokenType::IDENTIFIER, endStr);
 	}
 }
 void Scanner::getToken() {
@@ -76,17 +76,17 @@ void Scanner::getToken() {
 	// Skip any whitespace.
 	switch (LastChar)
 	{
-		case '+':addToken(PLUS, "+"); break;
-		case '-':addToken(MINUS, "-"); break;
-		case '*':addToken(STAR, "*"); break;
-		case '/':addToken(SLASH, "/"); break;
-		case '=':addToken(EQUAL, "="); break;
-		case '{':addToken(LBRACE, "{"); break;
-		case '}':addToken(RBRACE, "}"); break;
-		case '(':addToken(LPAREN, "("); break;
-		case ')':addToken(RPAREN, ")"); break;
+		case '+':addToken(TokenType::PLUS, "+"); break;
+		case '-':addToken(TokenType::MINUS, "-"); break;
+		case '*':addToken(TokenType::STAR, "*"); break;
+		case '/':addToken(TokenType::SLASH, "/"); break;
+		case '=':addToken(TokenType::EQUAL, "="); break;
+		case '{':addToken(TokenType::LBRACE, "{"); break;
+		case '}':addToken(TokenType::RBRACE, "}"); break;
+		case '(':addToken(TokenType::LPAREN, "("); break;
+		case ')':addToken(TokenType::RPAREN, ")"); break;
 		case ';':
-			addToken(EOL, ";");
+			addToken(TokenType::EOL, ";");
 			line++;
 			break;
 		case ' ':break;
@@ -113,6 +113,6 @@ std::vector<Token> Scanner::scanTokens() {
 	{
 		getToken();
 	}
-	addToken(EOFL, "EOF");
+	addToken(TokenType::EOFL, "EOF");
 	return TokenStream;
 };

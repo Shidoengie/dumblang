@@ -7,7 +7,7 @@
 #include <map>
 #include <string>
 
-enum TokenType
+enum class TokenType
 {
     // lieterals
     STR,
@@ -32,7 +32,7 @@ enum TokenType
     EOFL
 };
 TokenType mapKeyword(std::string keyword);
-std::map <std::string, TokenType> GetKeywordMap();
+std::map<std::string, TokenType> GetKeywordMap();
 std::string mapToken(TokenType tk);
-std::map <TokenType, std::string> GetTokenMap();
+std::map<TokenType, std::string> GetTokenMap();
 #endif

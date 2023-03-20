@@ -4,6 +4,8 @@
 #include <map>
 #include <string>
 #include "Scanner.h"
+#include "Token.h"
+#include "TokenType.h"
 #include "REPL.h"
 int main(int argc, char* argv[]) {
 

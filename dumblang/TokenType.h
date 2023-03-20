@@ -6,6 +6,7 @@
 #include <map>
 #include <string>
 
+
 std::string enumMap[16] = { "STR", "NUM", "IDENTIFIER", "EOLN", "PLUS", "MINUS", "STAR", "SLASH", "LPAREN", "RPAREN", "EQUAL","PRINT","INPUT","EOF" };
 enum TokenType
 {
@@ -35,5 +36,4 @@ std::map <std::string, TokenType> KeywordMap = {
     {"print",PRINT},
     {"input",INPUT}
 };
-
-
+std::string mapToken(TokenType tk);

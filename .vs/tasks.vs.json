@@ -1,0 +1,10 @@
+{
+  "version": "0.2.1",
+  "tasks": [
+    {
+      "taskLabel": "task-dumblang",
+      "appliesTo": "cpp/Scanner/src/dumblang.cpp",
+      "type": "launch"
+    }
+  ]
+}

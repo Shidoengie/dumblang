@@ -57,9 +57,11 @@ void Scanner::str() {
 void Scanner::identifier(char LastChar) {
 	std::string endStr;
 	do {
+		
 		endStr += LastChar;
 		LastChar = advance();
 	} while (isalnum(LastChar));
+	current--;
 	if (GetKeywordMap().contains(endStr)) {
 		addToken(mapKeyword(endStr), endStr);
 	}

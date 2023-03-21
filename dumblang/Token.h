@@ -1,25 +1,52 @@
 #pragma once
-#ifndef TOKEN_H
-#define TOKEN_H
-#include "TokenType.h"
 #include <variant>
 #include <iostream>
 #include <vector>
 #include <map>
 #include <string>
-std::string stringify(std::variant<double, std::string> const& value);
-struct Token
+
+class Token
 {
-	enum TokenType type;
-	std::variant<double, std::string> lexeme;
-	int line;
-	Token(TokenType _type, std::variant<double, std::string> _lexeme, int _line) {
-		type = _type;
-		lexeme = _lexeme;
-		line = _line;
-	}
-	std::string toString() {
-		return "type:" + mapToken(type) + " |lexeme: " + stringify(lexeme) + " |line:" + std::to_string(line);
-	}
+public:
+    enum Type
+    {
+        // lieterals
+        STR,
+        NUM,
+        IDENTIFIER,
+        EOL,
+        // operators
+        PLUS,
+        MINUS,
+        STAR,
+        SLASH,
+        LPAREN,
+        RPAREN,
+        LBRACE,
+        RBRACE,
+        EQUAL,
+        // keywords
+        PRINT,
+        INPUT,
+        TRUE,
+        FALSE,
+        EOFL
+    };
+    Token::Type type;
+    std::variant<double, std::string> lexeme;
+    int line;
+    
+    std::string toString();
+    Token(Token::Type _type, std::variant<double, std::string> _lexeme, int _line) {
+        type = _type;
+        lexeme = _lexeme;
+        line = _line;
+    }
+private:
+    std::string stringify(std::variant<double, std::string> const& value);
 };
-#endif
+
+std::map <std::string, Token::Type> GetKeywordMap();
+std::map <Token::Type, std::string> GetTokenMap();
+Token::Type mapKeyword(std::string keyword);
+std::string mapToken(Token::Type tk);

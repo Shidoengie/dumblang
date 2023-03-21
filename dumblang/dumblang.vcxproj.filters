@@ -18,30 +18,21 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="scanner.cpp">
+    <ClCompile Include="Shlang.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Token.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="REPL.cpp">
+    <ClCompile Include="Scanner.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="scanner.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Token.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="TokenType.cpp">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="TokenType.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="REPL.h">
+    <ClInclude Include="Scanner.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

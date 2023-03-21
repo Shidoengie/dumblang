@@ -141,16 +141,13 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="scanner.cpp" />
-    <ClCompile Include="REPL.cpp" />
+    <ClCompile Include="Scanner.cpp" />
+    <ClCompile Include="Shlang.cpp" />
     <ClCompile Include="Token.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="REPL.h" />
-    <ClInclude Include="scanner.h" />
+    <ClInclude Include="Scanner.h" />
     <ClInclude Include="Token.h" />
-    <ClInclude Include="TokenType.cpp" />
-    <ClInclude Include="TokenType.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

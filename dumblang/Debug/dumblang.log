@@ -1,9 +1,0 @@
-﻿  dumblang.cpp
-  The contents of <variant> are available only with C++17 or later.
-C:\Users\AEPBS\source\repos\dumblang\dumblang\dumblang.cpp(36,9): error C2143: syntax error: missing ';' before '<'
-C:\Users\AEPBS\source\repos\dumblang\dumblang\dumblang.cpp(36,9): error C4430: missing type specifier - int assumed. Note: C++ does not support default-int
-C:\Users\AEPBS\source\repos\dumblang\dumblang\dumblang.cpp(36,29): error C2238: unexpected token(s) preceding ';'
-C:\Users\AEPBS\source\repos\dumblang\dumblang\dumblang.cpp(41,3): error C2065: 'lexeme': undeclared identifier
-C:\Users\AEPBS\source\repos\dumblang\dumblang\dumblang.cpp(46,3): error C2065: 'lexeme': undeclared identifier
-C:\Users\AEPBS\source\repos\dumblang\dumblang\dumblang.cpp(50,49): error C2065: 'lexeme': undeclared identifier
-C:\Users\AEPBS\source\repos\dumblang\dumblang\dumblang.cpp(65,17): warning C4018: '>=': signed/unsigned mismatch

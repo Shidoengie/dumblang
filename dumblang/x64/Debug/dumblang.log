@@ -1,4 +1,5 @@
-﻿  Shlang.cpp
+﻿  Scanner.cpp
+  Shlang.cpp
   Token.cpp
   Generating Code...
   dumblang.vcxproj -> C:\Users\AEPBS\Documents\GitHub\dumblang\x64\Debug\dumblang.exe

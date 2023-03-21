@@ -1,3 +1,11 @@
 .vs/
 Debug/
+dumblang/Debug/
+dumblang/x64/
+dumblang/x86/
 x64/
+x86/
+*.obj
+*.tlog
+*.log
+*.pdb

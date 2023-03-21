@@ -24,7 +24,12 @@ public:
         RPAREN,
         LBRACE,
         RBRACE,
+        LBRACK,
+        RBRACK,
         EQUAL,
+        DOT,
+        LESSER,
+        GREATER,
         // keywords
         PRINT,
         INPUT,

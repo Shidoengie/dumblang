@@ -13,16 +13,16 @@ Scanner::Scanner(std::string _source)
 	source = _source;
 }
 
-char Scanner::advance() {
+char8_t Scanner::advance() {
 	return source[current++];
 }
 bool Scanner::isAtEnd() {
 	return current >= source.length();
 }
-char Scanner::peek() {
+char8_t Scanner::peek() {
 	return source[current];
 }
-char Scanner::peekNext() {
+char8_t Scanner::peekNext() {
 	if (current + 1 >= source.length()) return '\0';
 	return source[current + 1];
 }
@@ -31,7 +31,7 @@ void Scanner::addToken(Token::Type type, std::variant<double, std::string> lexem
 	Token token = Token(type, lexeme, line);
 	TokenStream.push_back(token);
 }
-void Scanner::num(char LastChar) {
+void Scanner::num(char8_t LastChar) {
 	std::string numStr;
 	do {
 		numStr += LastChar;
@@ -43,18 +43,26 @@ void Scanner::num(char LastChar) {
 }
 
 void Scanner::str() {
-	if (isAtEnd()) {
-		return;
-	}
-	char LastChar = advance();
+	
+	char8_t LastChar = advance();
 	std::string endStr;
 	do {
 		endStr += LastChar;
+		if (isAtEnd()) {
+			hadError = true;
+			break;
+		}
 		LastChar = advance();
 	} while (LastChar != '"');
-	addToken(Token::STR, endStr);
+	if (!hadError) {
+		addToken(Token::STR, endStr);
+		
+	}
+	else {
+		std::cout << "Undetermined String!" << '\n';
+	}
 }
-void Scanner::identifier(char LastChar) {
+void Scanner::identifier(char8_t LastChar) {
 	std::string endStr;
 	do {
 		
@@ -70,12 +78,15 @@ void Scanner::identifier(char LastChar) {
 	}
 }
 void Scanner::getToken() {
-
-	char LastChar = advance();
+	if (hadError) {
+		return;
+	}
+	char8_t LastChar = advance();
 
 	// Skip any whitespace.
 	switch (LastChar)
 	{
+	case '.':addToken(Token::DOT, "."); break;
 	case '+':addToken(Token::PLUS, "+"); break;
 	case '-':addToken(Token::MINUS, "-"); break;
 	case '*':addToken(Token::STAR, "*"); break;
@@ -85,6 +96,11 @@ void Scanner::getToken() {
 	case '}':addToken(Token::RBRACE, "}"); break;
 	case '(':addToken(Token::LPAREN, "("); break;
 	case ')':addToken(Token::RPAREN, ")"); break;
+	case '[':addToken(Token::LBRACK, "["); break;
+	case ']':addToken(Token::RBRACK, "]"); break;
+	case '<':addToken(Token::LESSER, "<"); break;
+	case '>':addToken(Token::GREATER, ">"); break;
+	case ',':addToken(Token::COMMA, ","); break;
 	case ';':
 		addToken(Token::EOL, ";");
 		line++;
@@ -103,9 +119,7 @@ void Scanner::getToken() {
 			identifier(LastChar);
 		}
 		else {
-
-			std::cout << int(LastChar);
-			std::cout << "UNEXPECTED CHAR!\n";
+			std::cout << "Unexpected char!" << '\n';
 		}
 		break;
 	}

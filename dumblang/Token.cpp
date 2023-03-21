@@ -16,30 +16,37 @@ std::string Token::toString() {
 }
 std::map<std::string, Token::Type> GetKeywordMap() {
     std::map<std::string, Token::Type> KeywordMap = {
-       {"print",Token::PRINT},
-       {"input",Token::INPUT}
+        {"print",Token::PRINT},
+        {"input",Token::INPUT},
+        {"true",Token::TRUE},
+        {"false",Token::FALSE}
     };
     return KeywordMap;
 }
 
 std::map<Token::Type, std::string> GetTokenMap() {
     std::map<Token::Type, std::string> TokenMap = {
-       {Token::PRINT,"PRINT"},
-       {Token::INPUT,"INPUT"},
-       {Token::STR,"STR"},
-       {Token::NUM,"NUM"},
-       {Token::IDENTIFIER,"IDENTIFIER"},
-       {Token::EOL,"EOL"},
-       {Token::PLUS,"PLUS"},
-       {Token::MINUS,"MINUS"},
-       {Token::STAR,"STAR"},
-       {Token::SLASH,"SLASH"},
-       {Token::LPAREN,"LPAREN"},
-       {Token::RPAREN,"RPAREN"},
-       {Token::LBRACE,"LABRACE"},
-       {Token::RBRACE,"RBRACE"},
-       {Token::EQUAL,"EQUAL"},
-       {Token::EOFL,"EOFL"}
+        {Token::PRINT,"PRINT"},
+        {Token::INPUT,"INPUT"},
+        {Token::STR,"STR"},
+        {Token::NUM,"NUM"},
+        {Token::IDENTIFIER,"IDENTIFIER"},
+        {Token::EOL,"EOL"},
+        {Token::PLUS,"PLUS"},
+        {Token::MINUS,"MINUS"},
+        {Token::STAR,"STAR"},
+        {Token::SLASH,"SLASH"},
+        {Token::LPAREN,"LPAREN"},
+        {Token::RPAREN,"RPAREN"},
+        {Token::LBRACE,"LABRACE"},
+        {Token::RBRACE,"RBRACE"},
+        {Token::LBRACK,"LABRACK"},
+        {Token::RBRACK,"RBRACK"},
+        {Token::LESSER,"LESSER"},
+        {Token::GREATER,"GREATER"},
+        {Token::EQUAL,"EQUAL"},
+        {Token::EOFL,"EOFL"},
+        {Token::DOT,"DOT"}
     };
     return TokenMap;
 }

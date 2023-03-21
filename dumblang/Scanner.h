@@ -14,15 +14,16 @@ private:
 	std::string source;
 	int current;
 	int line;
+	bool hadError = false;
 	std::vector<Token> TokenStream;
-	char advance();
+	char8_t advance();
 	bool isAtEnd();
-	char peek();
-	char peekNext();
+	char8_t peek();
+	char8_t peekNext();
 	void addToken(Token::Type type, std::variant<double, std::string> lexeme);
-	void num(char LastChar);
+	void num(char8_t LastChar);
 	void str();
-	void identifier(char LastChar);
+	void identifier(char8_t LastChar);
 	void getToken();
 };
 

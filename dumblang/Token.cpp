@@ -19,7 +19,13 @@ std::map<std::string, Token::Type> GetKeywordMap() {
         {"print",Token::PRINT},
         {"input",Token::INPUT},
         {"true",Token::TRUE},
-        {"false",Token::FALSE}
+        {"false",Token::FALSE},
+        {"func",Token::FUNC},
+        {"if",Token::IF},
+        {"elif",Token::ELIF},
+        {"else",Token::ELSE},
+        {"loop",Token::LOOP},
+        {"break",Token::BREAK}
     };
     return KeywordMap;
 }
@@ -46,7 +52,9 @@ std::map<Token::Type, std::string> GetTokenMap() {
         {Token::GREATER,"GREATER"},
         {Token::EQUAL,"EQUAL"},
         {Token::EOFL,"EOFL"},
-        {Token::DOT,"DOT"}
+        {Token::DOT,"DOT"},
+        {Token::COMMA,"COMMA"},
+        {Token::COLON,"COLON"}
     };
     return TokenMap;
 }

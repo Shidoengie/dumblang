@@ -101,6 +101,7 @@ void Scanner::getToken() {
 	case '<':addToken(Token::LESSER, "<"); break;
 	case '>':addToken(Token::GREATER, ">"); break;
 	case ',':addToken(Token::COMMA, ","); break;
+	case ':':addToken(Token::COLON, ":"); break;
 	case ';':
 		addToken(Token::EOL, ";");
 		line++;

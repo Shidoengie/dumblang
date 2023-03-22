@@ -30,11 +30,19 @@ public:
         DOT,
         LESSER,
         GREATER,
+        COMMA,
+        COLON,
         // keywords
         PRINT,
         INPUT,
         TRUE,
         FALSE,
+        IF,
+        ELSE,
+        ELIF,
+        FUNC,
+        LOOP,
+        BREAK,
         EOFL
     };
     Token::Type type;

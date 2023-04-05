@@ -4,51 +4,74 @@
 #include <iostream>
 #include <vector>
 #include <variant>
-
+#include <exception>
 static int count = 0;
 enum operatorType {
 	ADD,
 	SUBTRACT,
 	DIVIDE,
 	MULTIPLY,
-	ASSIGN
 };
 struct Variable;
 struct BinaryExpr;
 typedef std::variant<double, BinaryExpr, Variable> Expression;
-
+bool hadError = false;
 struct BinaryExpr {
 	operatorType type;
 	Expression* left;
 	Expression* right;
 };
-struct Variable
-{
+struct Variable {
 	std::string name;
 };
-double eval(Expression expr) {
+std::map<std::string, double> varMap = {
+	{"Test",10.0}
+};
+
+double Eval(Expression expr) {
 	if (std::holds_alternative<double>(expr)) {
 		return std::get<double>(expr);
 	}
+	else if (std::holds_alternative<Variable>(expr)) {
+		Variable var = std::get<Variable>(expr);
+		if (varMap.contains(var.name)) {
+			return varMap[var.name];
+		}
+		else { 
+			throw "Undeclared Variable";
+		}
+	}
 	else {
 		BinaryExpr binOp = std::get<BinaryExpr>(expr);
-		double left_value = eval(*binOp.left);
-		double right_value = eval(*binOp.right);
+		double leftValue, rightValue;
+		try {
+			leftValue = Eval(*binOp.left);
+		}
+		catch (const char* msg) {
+			std::cout << msg << '\n';
+		}
+		try {
+			rightValue = Eval(*binOp.right);
+		}
+		catch (const char* msg) {
+			std::cout << msg << '\n';
+		}
 		switch (binOp.type)
 		{
 		case ADD:
-			return left_value + right_value;
+			return leftValue + rightValue;
 			break;
 		case MULTIPLY:
-			return left_value * right_value;
+			return leftValue * rightValue;
 			break;
 		case DIVIDE:
-			return left_value / right_value;
+			return leftValue / rightValue;
 			break;
 		case SUBTRACT:
-			return left_value - right_value;
+			return leftValue - rightValue;
 			break;
 		default:
+			std::cout << "idk yet";
 			break;
 		}
 	}

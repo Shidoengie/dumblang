@@ -24,6 +24,7 @@ struct BinaryExpr {
 struct Variable {
 	std::string name;
 };
+
 std::map<std::string, double> varMap = {
 	{"Test",2.0},
 	{"PI",3.146210}

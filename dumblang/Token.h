@@ -15,7 +15,6 @@ public:
         NUM,
         IDENTIFIER,
         EOL,
-        // operators
         PLUS,
         MINUS,
         STAR,
@@ -35,8 +34,6 @@ public:
         // keywords
         PRINT,
         INPUT,
-        TRUE,
-        FALSE,
         IF,
         ELSE,
         ELIF,

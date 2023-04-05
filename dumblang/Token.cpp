@@ -18,8 +18,6 @@ std::map<std::string, Token::Type> GetKeywordMap() {
     std::map<std::string, Token::Type> KeywordMap = {
         {"print",Token::PRINT},
         {"input",Token::INPUT},
-        {"true",Token::TRUE},
-        {"false",Token::FALSE},
         {"func",Token::FUNC},
         {"if",Token::IF},
         {"elif",Token::ELIF},

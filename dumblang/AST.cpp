@@ -14,7 +14,7 @@ enum operatorType {
 };
 struct Variable;
 struct BinaryExpr;
-typedef std::variant<double, BinaryExpr, Variable> Expression;
+using Expression = std::variant<double, BinaryExpr, Variable>;
 bool hadError = false;
 struct BinaryExpr {
 	operatorType type;
@@ -43,21 +43,11 @@ double Eval(Expression expr) {
 	}
 	if (std::holds_alternative<BinaryExpr>(expr)) {
 		BinaryExpr binOp = std::get<BinaryExpr>(expr);
-		double leftValue, rightValue;
-		try {
-			leftValue = Eval(*binOp.left);
-		}
-		catch (const char* msg) {
-			throw msg;
-		}
-		try {
-			rightValue = Eval(*binOp.right);
-		}
-		catch (const char* msg) {
-			throw msg;
-		}
+		double leftValue = Eval(*binOp.left);
+		double rightValue = Eval(*binOp.right);
 		return binaryCalc(binOp.type, leftValue, rightValue);
 	}
+
 };
 double binaryCalc(operatorType opType, double leftValue, double rightValue) {
 	switch (opType)

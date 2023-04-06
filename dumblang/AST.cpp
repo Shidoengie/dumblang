@@ -41,22 +41,26 @@ double Eval(Expression expr) {
 		}
 		throw "Undeclared Variable";
 	}
-	BinaryExpr binOp = std::get<BinaryExpr>(expr);
-	double leftValue, rightValue;
-	try {
-		leftValue = Eval(*binOp.left);
+	if (std::holds_alternative<BinaryExpr>(expr)) {
+		BinaryExpr binOp = std::get<BinaryExpr>(expr);
+		double leftValue, rightValue;
+		try {
+			leftValue = Eval(*binOp.left);
+		}
+		catch (const char* msg) {
+			throw msg;
+		}
+		try {
+			rightValue = Eval(*binOp.right);
+		}
+		catch (const char* msg) {
+			throw msg;
+		}
+		return binaryCalc(binOp.type, leftValue, rightValue);
 	}
-	catch (const char* msg) {
-		throw msg;
-	}
-	try {
-		rightValue = Eval(*binOp.right);
-	}
-	catch (const char* msg) {
-		throw msg;
-	}
-
-	switch (binOp.type)
+};
+double binaryCalc(operatorType opType, double leftValue, double rightValue) {
+	switch (opType)
 	{
 	case ADD:
 		return leftValue + rightValue;
@@ -73,6 +77,5 @@ double Eval(Expression expr) {
 	default:
 		std::cout << "idk yet";
 		break;
-
 	}
-};
+}

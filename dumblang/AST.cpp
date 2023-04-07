@@ -6,22 +6,30 @@
 #include <variant>
 #include <exception>
 #include <map>
-enum OperatorType {
+enum BinaryType {
 	ADD,
 	SUBTRACT,
 	DIVIDE,
 	MULTIPLY,
 };
+enum UnaryType {
+	NEGATE
+};
 struct Assignment;
 struct Variable;
 struct BinaryExpr;
+struct UnaryExpr;
 using Value = std::variant<double, std::string>;
-using Expression = std::variant<Value, BinaryExpr, Variable, Assignment>;
+using Expression = std::variant<Value, BinaryExpr,UnaryExpr, Variable, Assignment>;
 bool hadError = false;
 struct BinaryExpr {
-	OperatorType type;
+	BinaryType type;
 	Expression* left;
 	Expression* right;
+};
+struct UnaryExpr {
+	UnaryType type;
+	Expression* object;
 };
 struct Assignment {
 	std::string varName;
@@ -52,6 +60,22 @@ Value Eval(Expression expr) {
 		}
 		throw "Undeclared Variable";
 	}
+	if (std::holds_alternative<UnaryExpr>(expr)) {
+		UnaryExpr unaryOp = std::get<UnaryExpr>(expr);
+		Value obj = Eval(*unaryOp.object);
+		switch (unaryOp.type)
+		{
+		case NEGATE:
+			if (std::holds_alternative<double>(obj)) {
+				return -(std::get<double>(obj));
+			}
+			throw "Invalid type";
+			break;
+		default:
+			break;
+		}
+		
+	}
 	if (std::holds_alternative<BinaryExpr>(expr)) {
 		BinaryExpr binOp = std::get<BinaryExpr>(expr);
 		Value leftValue = Eval(*binOp.left);
@@ -67,7 +91,7 @@ Value Eval(Expression expr) {
 		}
 	}
 };
-double numCalc(OperatorType opType, double leftValue, double rightValue) {
+double numCalc(BinaryType opType, double leftValue, double rightValue) {
 	switch (opType)
 	{
 	case ADD:
@@ -87,7 +111,7 @@ double numCalc(OperatorType opType, double leftValue, double rightValue) {
 		break;
 	}
 }
-std::string strCalc(OperatorType opType, std::string leftValue, std::string rightValue) {
+std::string strCalc(BinaryType opType, std::string leftValue, std::string rightValue) {
 	if (opType != ADD) {
 		throw "invalid operator";
 	}

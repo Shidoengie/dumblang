@@ -6,7 +6,7 @@
 #include <variant>
 #include <exception>
 #include <map>
-enum operatorType {
+enum OperatorType {
 	ADD,
 	SUBTRACT,
 	DIVIDE,
@@ -14,10 +14,11 @@ enum operatorType {
 };
 struct Variable;
 struct BinaryExpr;
-using Expression = std::variant<double, BinaryExpr, Variable>;
+using Value = std::variant<double, std::string>;
+using Expression = std::variant<Value, BinaryExpr, Variable>;
 bool hadError = false;
 struct BinaryExpr {
-	operatorType type;
+	OperatorType type;
 	Expression* left;
 	Expression* right;
 };
@@ -30,9 +31,9 @@ std::map<std::string, double> varMap = {
 	{"PI",3.146210}
 };
 
-double Eval(Expression expr) {
-	if (std::holds_alternative<double>(expr)) {
-		return std::get<double>(expr);
+Value Eval(Expression expr) {
+	if (std::holds_alternative<Value>(expr)) {
+		return std::get<Value>(expr);
 	}
 	if (std::holds_alternative<Variable>(expr)) {
 		Variable var = std::get<Variable>(expr);
@@ -43,13 +44,20 @@ double Eval(Expression expr) {
 	}
 	if (std::holds_alternative<BinaryExpr>(expr)) {
 		BinaryExpr binOp = std::get<BinaryExpr>(expr);
-		double leftValue = Eval(*binOp.left);
-		double rightValue = Eval(*binOp.right);
-		return binaryCalc(binOp.type, leftValue, rightValue);
+		Value leftValue = Eval(*binOp.left);
+		Value rightValue = Eval(*binOp.right);
+		if (leftValue.index() != rightValue.index()) {
+			throw "Mixed types";
+		}
+		if (std::holds_alternative<double>(leftValue)) {
+			return numCalc(binOp.type, std::get<double>(leftValue), std::get<double>(rightValue));
+		}
+		if (std::holds_alternative<std::string>(leftValue)) {
+			return strCalc(binOp.type, std::get<std::string>(leftValue), std::get<std::string>(rightValue));
+		}
 	}
-
 };
-double binaryCalc(operatorType opType, double leftValue, double rightValue) {
+double numCalc(OperatorType opType, double leftValue, double rightValue) {
 	switch (opType)
 	{
 	case ADD:
@@ -68,4 +76,10 @@ double binaryCalc(operatorType opType, double leftValue, double rightValue) {
 		std::cout << "idk yet";
 		break;
 	}
+}
+std::string strCalc(OperatorType opType, std::string leftValue, std::string rightValue) {
+	if (opType != ADD) {
+		throw "invalid operator";
+	}
+	return leftValue + rightValue;
 }

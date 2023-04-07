@@ -12,21 +12,26 @@ enum OperatorType {
 	DIVIDE,
 	MULTIPLY,
 };
+struct Assignment;
 struct Variable;
 struct BinaryExpr;
 using Value = std::variant<double, std::string>;
-using Expression = std::variant<Value, BinaryExpr, Variable>;
+using Expression = std::variant<Value, BinaryExpr, Variable, Assignment>;
 bool hadError = false;
 struct BinaryExpr {
 	OperatorType type;
 	Expression* left;
 	Expression* right;
 };
+struct Assignment {
+	std::string varName;
+	Expression* value;
+};
 struct Variable {
 	std::string name;
 };
 
-std::map<std::string, double> varMap = {
+std::map<std::string, Value> varMap = {
 	{"Test",2.0},
 	{"PI",3.146210}
 };
@@ -34,6 +39,11 @@ std::map<std::string, double> varMap = {
 Value Eval(Expression expr) {
 	if (std::holds_alternative<Value>(expr)) {
 		return std::get<Value>(expr);
+	}
+	if (std::holds_alternative<Assignment>(expr)) {
+		Assignment ass = std::get<Assignment>(expr);
+		Value assignVal = Eval(*ass.value);
+		varMap.insert_or_assign(ass.varName, assignVal);
 	}
 	if (std::holds_alternative<Variable>(expr)) {
 		Variable var = std::get<Variable>(expr);

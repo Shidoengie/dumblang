@@ -44,7 +44,7 @@ struct Variable {
 
 struct Call {
 	std::string callee;
-	std::vector<std::string> args;
+	std::vector<Expression> args;
 };
 struct Function {
 	Expression* body;
@@ -72,24 +72,23 @@ Value Eval(Expression expr) {
 		throw "Undeclared Variable";
 	}
 	if (std::holds_alternative<Call>(expr)) {
-		Call fnCall = std::get<Call>(expr);
-		if (!varMap.contains(fnCall.callee)) {
+		Call request = std::get<Call>(expr);
+		if (!varMap.contains(request.callee)) {
 			throw "Undeclared Function";
 		}
-		Value funcObj = varMap[fnCall.callee];
-		if (!std::holds_alternative<Function>) {
+		if (!std::holds_alternative<Function>(varMap[request.callee])) {
 			throw "Invalid Function Call";
 		}
-		Function func = std::get<Function>(funcObj);
-		func.args = fnCall.args;
-		if (func.args.size() > 0) {
-			for (size_t index = 0; index < func.args.size(); index++) {
-				std::string var = func.args[index];
-				Value assignVal = 0.0;
-				varMap.insert_or_assign(var, assignVal);
-			}
+		Function calledFunc = std::get<Function>(varMap[request.callee]);
+		if (request.args.size() != calledFunc.args.size()) {
+			throw "Incomplete arguments";
 		}
-		return Eval(*func.body);
+		for (size_t index = 0; index < calledFunc.args.size(); index++) {
+			std::string var = calledFunc.args[index];
+			Value assignVal = Eval(request.args[index]);
+			varMap.insert_or_assign(var, assignVal);
+		}
+		
 		
 	}
 	if (std::holds_alternative<UnaryExpr>(expr)) {
@@ -153,4 +152,14 @@ std::string strCalc(BinaryType opType, std::string leftValue, std::string rightV
 		throw "invalid operator";
 	}
 	return leftValue + rightValue;
+}
+Value print_builtin(std::vector<Value> arguments) {
+	for (auto const& argument : arguments) {
+		if (std::holds_alternative<std::string>(argument)) {
+			std::cout << std::get<std::string>(argument);
+		}
+		if (std::holds_alternative<double>(argument)) {
+			std::cout << std::get<double>(argument);
+		}
+	}
 }

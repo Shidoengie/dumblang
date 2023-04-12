@@ -6,6 +6,7 @@
 #include <variant>
 #include <exception>
 #include <map>
+
 enum BinaryType {
 	ADD,
 	SUBTRACT,
@@ -22,7 +23,8 @@ struct BinaryExpr;
 struct UnaryExpr;
 struct Call;
 struct Function;
-using Value = std::variant<double, std::string, Function>;
+struct BuiltinFunc;
+using Value = std::variant<double, std::string, Function, BuiltinFunc>;
 using Expression = std::variant<Value, BinaryExpr,UnaryExpr, Variable, Assignment, Call>;
 bool hadError = false;
 struct BinaryExpr {
@@ -50,6 +52,9 @@ struct Function {
 	Expression* body;
 	std::vector<std::string> args;
 };
+struct BuiltinFunc {
+
+};
 std::map<std::string, Value> varMap = {
 	{"Test",2.0},
 	{"PI",3.146210}
@@ -76,7 +81,11 @@ Value Eval(Expression expr) {
 		if (!varMap.contains(request.callee)) {
 			throw "Undeclared Function";
 		}
-		if (!std::holds_alternative<Function>(varMap[request.callee])) {
+		Value getFunc = varMap[request.callee];
+		if (!std::holds_alternative<Function>(getFunc)) {
+			if (std::holds_alternative<BuiltinFunc>(getFunc)) {
+
+			}
 			throw "Invalid Function Call";
 		}
 		Function calledFunc = std::get<Function>(varMap[request.callee]);

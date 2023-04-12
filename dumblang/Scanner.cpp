@@ -86,6 +86,7 @@ void Scanner::getToken() {
 	// Skip any whitespace.
 	switch (LastChar)
 	{
+	case '!':addToken(Token::BANG, "!"); break;
 	case '.':addToken(Token::DOT, "."); break;
 	case '+':addToken(Token::PLUS, "+"); break;
 	case '-':addToken(Token::MINUS, "-"); break;

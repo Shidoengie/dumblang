@@ -31,6 +31,7 @@ public:
         GREATER,
         COMMA,
         COLON,
+        BANG,
         // keywords
         PRINT,
         INPUT,
@@ -38,6 +39,7 @@ public:
         ELSE,
         ELIF,
         FUNC,
+        RETURN,
         LOOP,
         BREAK,
         EOFL

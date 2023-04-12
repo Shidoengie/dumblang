@@ -19,6 +19,7 @@ std::map<std::string, Token::Type> GetKeywordMap() {
         {"print",Token::PRINT},
         {"input",Token::INPUT},
         {"func",Token::FUNC},
+        {"return",Token::RETURN},
         {"if",Token::IF},
         {"elif",Token::ELIF},
         {"else",Token::ELSE},
@@ -52,7 +53,8 @@ std::map<Token::Type, std::string> GetTokenMap() {
         {Token::EOFL,"EOFL"},
         {Token::DOT,"DOT"},
         {Token::COMMA,"COMMA"},
-        {Token::COLON,"COLON"}
+        {Token::COLON,"COLON"},
+        {Token::BANG,"BANG"}
     };
     return TokenMap;
 }

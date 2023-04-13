@@ -7,7 +7,7 @@
 #include <string>
 #include "Scanner.h"
 #include "Token.h"
-
+#include <stdexcept>
 Scanner::Scanner(std::string _source)
 {
 	source = _source;
@@ -49,18 +49,11 @@ void Scanner::str() {
 	do {
 		endStr += LastChar;
 		if (isAtEnd()) {
-			hadError = true;
-			break;
+			throw std::runtime_error("Undetermined string");
 		}
 		LastChar = advance();
 	} while (LastChar != '"');
-	if (!hadError) {
-		addToken(Token::STR, endStr);
-		
-	}
-	else {
-		std::cout << "Undetermined String!" << '\n';
-	}
+	addToken(Token::STR, endStr);
 }
 void Scanner::identifier(char8_t LastChar) {
 	std::string endStr;
@@ -78,9 +71,6 @@ void Scanner::identifier(char8_t LastChar) {
 	}
 }
 void Scanner::getToken() {
-	if (hadError) {
-		return;
-	}
 	char8_t LastChar = advance();
 
 	// Skip any whitespace.
@@ -110,18 +100,16 @@ void Scanner::getToken() {
 	case ' ':break;
 	case '\t':break;
 	case '\r':break;
-	case '"':str(); break;
+	case '"': str(); break;
 	default:
-		if (isdigit(LastChar))
-		{
+		if (isdigit(LastChar)) {
 			num(LastChar);
 		}
-		else if (isalnum(LastChar))
-		{
+		else if (isalnum(LastChar)) {
 			identifier(LastChar);
 		}
 		else {
-			std::cout << "Unexpected char!" << '\n';
+			throw std::runtime_error("Unexpected char!");
 		}
 		break;
 	}

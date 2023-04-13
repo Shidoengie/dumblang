@@ -45,7 +45,7 @@ struct Variable {
 };
 
 struct Call {
-	std::string callee;
+	Variable callee;
 	std::vector<Expression> args;
 };
 struct Function {
@@ -53,11 +53,12 @@ struct Function {
 	std::vector<std::string> args;
 };
 struct BuiltinFunc {
-
+	Value(*funcPointer)(std::vector<Value>);
 };
 std::map<std::string, Value> varMap = {
 	{"Test",2.0},
-	{"PI",3.146210}
+	{"PI",3.146210},
+	{"print",BuiltinFunc(&print_builtin)}
 };
 
 Value Eval(Expression expr) {
@@ -78,17 +79,14 @@ Value Eval(Expression expr) {
 	}
 	if (std::holds_alternative<Call>(expr)) {
 		Call request = std::get<Call>(expr);
-		if (!varMap.contains(request.callee)) {
-			throw "Undeclared Function";
-		}
-		Value getFunc = varMap[request.callee];
+		Value getFunc = Eval(request.callee);
 		if (!std::holds_alternative<Function>(getFunc)) {
 			if (std::holds_alternative<BuiltinFunc>(getFunc)) {
-
+				//do stuff
 			}
-			throw "Invalid Function Call";
+			throw "Invalid Call";
 		}
-		Function calledFunc = std::get<Function>(varMap[request.callee]);
+		Function calledFunc = std::get<Function>(getFunc);
 		if (request.args.size() != calledFunc.args.size()) {
 			throw "Incomplete arguments";
 		}

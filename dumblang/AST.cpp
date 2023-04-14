@@ -6,6 +6,7 @@
 #include <variant>
 #include <map>
 #include <stdexcept>
+
 enum BinaryType {
 	ADD,
 	SUBTRACT,
@@ -24,7 +25,13 @@ struct Call;
 struct Function;
 struct BuiltinFunc;
 struct Block;
+struct Return;
 using Value = std::variant<double, std::string, Function, BuiltinFunc>;
+
+template<class Ty, class... Types>
+constexpr bool variantHas(const std::variant<Types...>& var) noexcept {
+	return std::holds_alternative<Ty>(var);
+}
 
 using Expression = std::variant<
 	Value, BinaryExpr, UnaryExpr, 
@@ -47,28 +54,32 @@ struct Assignment {
 struct Variable {
 	std::string name;
 };
-
+struct Block {
+	std::vector<Expression> body;
+};
+struct Return {
+	Expression* object;
+};
 struct Call {
 	Variable callee;
 	std::vector<Expression> args;
 };
 struct Function {
-	Expression* bodyBlock;
+	Block bodyBlock;
 	std::vector<std::string> args;
 };
 struct BuiltinFunc {
 	Value(*funcPointer)(std::vector<Value>);
 	int argSize;
 };
-struct Block {
-	std::vector<Expression> body;
-};
+
+
 Value print_builtin(std::vector<Value> arguments) {
 	for (auto const& argument : arguments) {
-		if (std::holds_alternative<std::string>(argument)) {
+		if (variantHas<std::string>(argument)) {
 			std::cout << std::get<std::string>(argument);
 		}
-		if (std::holds_alternative<double>(argument)) {
+		if (variantHas<double>(argument)) {
 			std::cout << std::get<double>(argument);
 		}
 	}
@@ -111,32 +122,32 @@ Value CallBuiltinFunc(BuiltinFunc called, std::vector<Value> argValues) {
 	return called.funcPointer(argValues);
 }
 Value Eval(Expression expr) {
-	if (std::holds_alternative<Value>(expr)) {
+	if (variantHas<Value>(expr)) {
 		return std::get<Value>(expr);
 	}
-	if (std::holds_alternative<Assignment>(expr)) {
-		Assignment ass = std::get<Assignment>(expr);
+	if (variantHas<Assignment>(expr)) {
+		auto ass = std::get<Assignment>(expr);
 		Value assignVal = Eval(*ass.value);
 		varMap.insert_or_assign(ass.varName, assignVal);
 	}
-	if (std::holds_alternative<Variable>(expr)) {
-		Variable var = std::get<Variable>(expr);
+	if (variantHas<Variable>(expr)) {
+		auto var = std::get<Variable>(expr);
 		if (varMap.contains(var.name)) {
 			return varMap[var.name];
 		}
 		throw std::runtime_error("Undeclared Variable");
 	}
-	if (std::holds_alternative<Call>(expr)) {
-		Call request = std::get<Call>(expr);
+	if (variantHas<Call>(expr)) {
+		auto request = std::get<Call>(expr);
 		Value getFunc = Eval(request.callee);
 		std::vector<Value> argValues;
 		for (size_t index = 0; index < request.args.size(); index++) {
 			argValues.push_back(Eval(request.args[index]));
 		}
-		if (std::holds_alternative<BuiltinFunc>) {
+		if (variantHas<BuiltinFunc>) {
 			return CallBuiltinFunc(std::get<BuiltinFunc>(getFunc), argValues);
 		}
-		if (!std::holds_alternative<Function>(getFunc)) {
+		if (!variantHas<Function>(getFunc)) {
 			throw std::runtime_error("Invalid Call");
 		}
 		Function calledFunc = std::get<Function>(getFunc);
@@ -149,20 +160,22 @@ Value Eval(Expression expr) {
 			varMap.insert_or_assign(var, assignVal);
 		}
 		
-		
+		for (auto& statement : calledFunc.bodyBlock.body) {
+
+		}
 	}
-	if (std::holds_alternative<UnaryExpr>(expr)) {
-		UnaryExpr unaryOp = std::get<UnaryExpr>(expr);
+	if (variantHas<UnaryExpr>(expr)) {
+		auto unaryOp = std::get<UnaryExpr>(expr);
 		Value obj = Eval(*unaryOp.object);
 		switch (unaryOp.type)
 		{
 		case NEGATE:
-			if (std::holds_alternative<double>(obj)) {
+			if (variantHas<double>(obj)) {
 				return -(std::get<double>(obj));
 			}
 			throw std::runtime_error("Invalid type");
 		case POSITIVE:
-			if (std::holds_alternative<double>(obj)) {
+			if (variantHas<double>(obj)) {
 				return +(std::get<double>(obj));
 			}
 			throw std::runtime_error("Invalid type");
@@ -172,17 +185,17 @@ Value Eval(Expression expr) {
 		}
 		
 	}
-	if (std::holds_alternative<BinaryExpr>(expr)) {
-		BinaryExpr binOp = std::get<BinaryExpr>(expr);
+	if (variantHas<BinaryExpr>(expr)) {
+		auto binOp = std::get<BinaryExpr>(expr);
 		Value leftValue = Eval(*binOp.left);
 		Value rightValue = Eval(*binOp.right);
 		if (leftValue.index() != rightValue.index()) {
 			throw std::runtime_error("Mixed types");
 		}
-		if (std::holds_alternative<double>(leftValue)) {
+		if (variantHas<double>(leftValue)) {
 			return numCalc(binOp.type, std::get<double>(leftValue), std::get<double>(rightValue));
 		}
-		if (std::holds_alternative<std::string>(leftValue)) {
+		if (variantHas<std::string>(leftValue)) {
 			return strCalc(binOp.type, std::get<std::string>(leftValue), std::get<std::string>(rightValue));
 		}
 	}

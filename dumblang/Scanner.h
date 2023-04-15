@@ -14,7 +14,7 @@ private:
 	std::string source;
 	int current;
 	int line;
-	bool hadError = false;
+	
 	std::vector<Token> TokenStream;
 	char8_t advance();
 	bool isAtEnd();

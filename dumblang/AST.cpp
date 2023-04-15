@@ -1,12 +1,14 @@
-
-#include "AST.h"
-#include "Token.h"
 #include <iostream>
 #include <vector>
 #include <variant>
 #include <map>
 #include <stdexcept>
 #include <exception>
+template<class Ty, class... Types>
+constexpr bool variantHas(const std::variant<Types...>& var) noexcept {
+	return std::holds_alternative<Ty>(var);
+}
+
 enum BinaryType {
 	ADD,
 	SUBTRACT,
@@ -19,8 +21,8 @@ enum UnaryType {
 };
 struct Assignment;
 struct Variable;
-struct BinaryExpr;
-struct UnaryExpr;
+struct BinaryNode;
+struct UnaryNode;
 struct Call;
 struct Function;
 struct BuiltinFunc;
@@ -28,44 +30,39 @@ struct Block;
 struct Return;
 using Value = std::variant<double, std::string, Function, BuiltinFunc>;
 
-template<class Ty, class... Types>
-constexpr bool variantHas(const std::variant<Types...>& var) noexcept {
-	return std::holds_alternative<Ty>(var);
-}
-
-using Expression = std::variant<
-	Value, BinaryExpr, UnaryExpr, 
-	Variable, Assignment, Call, 
-	Block
+using Node = std::variant<
+	Value, BinaryNode, UnaryNode,
+	Variable, Assignment, Call,
+	Block, Return
 >;
-struct BinaryExpr {
+struct BinaryNode {
 	BinaryType type;
-	Expression* left;
-	Expression* right;
+	Node* left;
+	Node* right;
 };
-struct UnaryExpr {
+struct UnaryNode {
 	UnaryType type;
-	Expression* object;
+	Node* object;
 };
 struct Assignment {
 	std::string varName;
-	Expression* value;
+	Node* value;
 };
 struct Variable {
 	std::string name;
 };
 struct Block {
-	std::vector<Expression> body;
+	std::vector<Node> body;
 };
 struct Return {
-	Expression* object;
+	Node* object;
 };
 struct Call {
 	Variable callee;
-	std::vector<Expression> args;
+	std::vector<Node> args;
 };
 struct Function {
-	std::vector<Expression> body;
+	std::vector<Node> body;
 	std::vector<std::string> args;
 };
 struct BuiltinFunc {
@@ -75,7 +72,7 @@ struct BuiltinFunc {
 
 class ReturnException : public std::exception
 {
-private :
+private:
 	Value val_;
 public:
 	virtual const Value what() {
@@ -100,12 +97,13 @@ public:
 Value print_builtin(std::vector<Value> arguments) {
 	for (auto const& argument : arguments) {
 		if (variantHas<std::string>(argument)) {
-			std::cout << std::get<std::string>(argument);
+			std::cout << std::get<std::string>(argument) << '\n';
 		}
 		if (variantHas<double>(argument)) {
-			std::cout << std::get<double>(argument);
+			std::cout << std::get<double>(argument) << '\n';
 		}
 	}
+	return 0.0;
 }
 std::map<std::string, Value> varMap = {
 	{"Test",2.0},
@@ -144,7 +142,7 @@ Value CallBuiltinFunc(BuiltinFunc called, std::vector<Value> argValues) {
 	}
 	return called.funcPointer(argValues);
 }
-Value Eval(Expression expr) {
+Value Eval(Node expr) {
 	if (auto val = std::get_if<Value>(&expr)) {
 		return *val;
 	}
@@ -165,7 +163,7 @@ Value Eval(Expression expr) {
 		for (size_t index = 0; index < request.args.size(); index++) {
 			argValues.push_back(Eval(request.args[index]));
 		}
-		if (variantHas<BuiltinFunc>) {
+		if (variantHas<BuiltinFunc>(getFunc)) {
 			return CallBuiltinFunc(std::get<BuiltinFunc>(getFunc), argValues);
 		}
 		if (!variantHas<Function>(getFunc)) {
@@ -180,7 +178,7 @@ Value Eval(Expression expr) {
 			Value assignVal = argValues[index];
 			varMap.insert_or_assign(var, assignVal);
 		}
-		
+
 		for (auto& statement : calledFunc.body) {
 			try {
 				Eval(statement);
@@ -198,7 +196,7 @@ Value Eval(Expression expr) {
 	if (auto ret = std::get_if<Return>(&expr)) {
 		throw ReturnException(Eval(*ret->object));
 	}
-	if (auto unaryOp = std::get_if<UnaryExpr>(&expr)) {
+	if (auto unaryOp = std::get_if<UnaryNode>(&expr)) {
 		Value obj = Eval(*unaryOp->object);
 		switch (unaryOp->type)
 		{
@@ -216,9 +214,9 @@ Value Eval(Expression expr) {
 		default:
 			break;
 		}
-		
+
 	}
-	if (auto binOp = std::get_if<BinaryExpr>(&expr)) {
+	if (auto binOp = std::get_if<BinaryNode>(&expr)) {
 		Value leftValue = Eval(*binOp->left);
 		Value rightValue = Eval(*binOp->right);
 		if (leftValue.index() != rightValue.index()) {

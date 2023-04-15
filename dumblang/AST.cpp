@@ -4,6 +4,8 @@
 #include <map>
 #include <stdexcept>
 #include <exception>
+#include <stack>
+#include <string>
 template<class Ty, class... Types>
 constexpr bool variantHas(const std::variant<Types...>& var) noexcept {
 	return std::holds_alternative<Ty>(var);
@@ -69,19 +71,6 @@ struct BuiltinFunc {
 	Value(*funcPointer)(std::vector<Value>);
 	int argSize;
 };
-
-class ReturnException : public std::exception
-{
-private:
-	Value val_;
-public:
-	virtual const Value what() {
-		return val_;
-	}
-	ReturnException(Value val) {
-		val_ = val;
-	}
-};
 class ASTerror : public std::exception
 {
 private:
@@ -94,7 +83,7 @@ public:
 		msg = message;
 	}
 };
-Value print_builtin(std::vector<Value> arguments) {
+Value PrintBuiltin(std::vector<Value> arguments) {
 	for (auto const& argument : arguments) {
 		if (variantHas<std::string>(argument)) {
 			std::cout << std::get<std::string>(argument) << '\n';
@@ -105,10 +94,17 @@ Value print_builtin(std::vector<Value> arguments) {
 	}
 	return 0.0;
 }
+Value InputBuiltin(std::vector<Value> arguments) {
+	PrintBuiltin(arguments);
+	std::string out;
+	std::getline(std::cin, out);
+	return Value(out);
+};
 std::map<std::string, Value> varMap = {
 	{"Test",2.0},
 	{"PI",3.146210},
-	{"print",BuiltinFunc(&print_builtin,-1)}
+	{"print",BuiltinFunc(&PrintBuiltin,-1)},
+	{"input",BuiltinFunc(&InputBuiltin,1)}
 };
 
 double numCalc(BinaryType opType, double leftValue, double rightValue) {
@@ -142,6 +138,19 @@ Value CallBuiltinFunc(BuiltinFunc called, std::vector<Value> argValues) {
 	}
 	return called.funcPointer(argValues);
 }
+Value EvalBlock(std::vector<Node> block) {
+	std::stack<Node> nodeStack;
+	for (auto& statement : block) {
+		if (variantHas<Block>(statement)) {
+			for (auto& innerNode : std::get<Block>(statement).body) {
+				nodeStack.push(innerNode);
+			};
+			continue;
+		}
+		nodeStack.push(statement);
+	}
+
+};
 Value Eval(Node expr) {
 	if (auto val = std::get_if<Value>(&expr)) {
 		return *val;
@@ -178,23 +187,6 @@ Value Eval(Node expr) {
 			Value assignVal = argValues[index];
 			varMap.insert_or_assign(var, assignVal);
 		}
-
-		for (auto& statement : calledFunc.body) {
-			try {
-				Eval(statement);
-			}
-			catch (ReturnException val) {
-				return val.what();
-			}
-		}
-	}
-	if (auto block = std::get_if<Block>(&expr)) {
-		for (auto& statement : block->body) {
-			Eval(statement);
-		}
-	}
-	if (auto ret = std::get_if<Return>(&expr)) {
-		throw ReturnException(Eval(*ret->object));
 	}
 	if (auto unaryOp = std::get_if<UnaryNode>(&expr)) {
 		Value obj = Eval(*unaryOp->object);

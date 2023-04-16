@@ -144,11 +144,13 @@
     <ClCompile Include="AST.cpp" />
     <ClCompile Include="Scanner.cpp" />
     <ClCompile Include="Shlang.cpp" />
+    <ClCompile Include="ShlangError.cpp" />
     <ClCompile Include="Token.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AST.h" />
     <ClInclude Include="Scanner.h" />
+    <ClInclude Include="ShlangError.h" />
     <ClInclude Include="Token.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

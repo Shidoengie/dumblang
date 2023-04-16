@@ -5,7 +5,7 @@
 #include <string>
 #include "Token.h"
 #include "Scanner.h"
-
+#include "ShlangError.h"
 int main(int argc, char* argv[]) {
     while (true) {
         std::string source;
@@ -16,7 +16,7 @@ int main(int argc, char* argv[]) {
         try{
             TkStream = scan.scanTokens();
         }
-        catch(const std::runtime_error& err ){
+        catch(LangError& err ){
             std::cerr << err.what() << '\n';
         }
         for (size_t i = 0; i < TkStream.size(); i++)

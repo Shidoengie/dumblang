@@ -8,6 +8,7 @@
 #include "Scanner.h"
 #include "Token.h"
 #include <stdexcept>
+#include "ShlangError.h"
 Scanner::Scanner(std::string _source)
 {
 	source = _source;
@@ -49,7 +50,7 @@ void Scanner::str() {
 	do {
 		endStr += LastChar;
 		if (isAtEnd()) {
-			throw std::runtime_error("Undetermined string");
+			throw LangError("Undetermined string", LangError::LEXER);
 		}
 		LastChar = advance();
 	} while (LastChar != '"');
@@ -109,7 +110,7 @@ void Scanner::getToken() {
 			identifier(LastChar);
 		}
 		else {
-			throw std::runtime_error("Unexpected char!");
+			throw LangError("Unexpected char!", LangError::LEXER);
 		}
 		break;
 	}

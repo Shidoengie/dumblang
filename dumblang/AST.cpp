@@ -6,6 +6,7 @@
 #include <exception>
 #include <stack>
 #include <string>
+#include "ShlangError.h"
 template<class Ty, class... Types>
 constexpr bool variantHas(const std::variant<Types...>& var) noexcept {
 	return std::holds_alternative<Ty>(var);
@@ -29,6 +30,7 @@ struct Call;
 struct Function;
 struct BuiltinFunc;
 struct Block;
+struct Scope;
 struct Return;
 using Value = std::variant<double, std::string, Function, BuiltinFunc>;
 
@@ -70,18 +72,6 @@ struct Function {
 struct BuiltinFunc {
 	Value(*funcPointer)(std::vector<Value>);
 	int argSize;
-};
-class ASTerror : public std::exception
-{
-private:
-	std::string msg;
-public:
-	virtual const std::string what() {
-		return msg;
-	}
-	ASTerror(std::string message) {
-		msg = message;
-	}
 };
 Value PrintBuiltin(std::vector<Value> arguments) {
 	for (auto const& argument : arguments) {
@@ -128,13 +118,13 @@ double numCalc(BinaryType opType, double leftValue, double rightValue) {
 }
 std::string strCalc(BinaryType opType, std::string leftValue, std::string rightValue) {
 	if (opType != ADD) {
-		throw ASTerror("Invalid operator");
+		throw LangError("Invalid operator",LangError::AST);
 	}
 	return leftValue + rightValue;
 }
 Value CallBuiltinFunc(BuiltinFunc called, std::vector<Value> argValues) {
 	if (called.argSize != -1 && argValues.size() != called.argSize) {
-		throw ASTerror("Incomplete arguments");
+		throw LangError("Incomplete arguments", LangError::AST);
 	}
 	return called.funcPointer(argValues);
 }
@@ -149,7 +139,7 @@ Value EvalBlock(std::vector<Node> block) {
 		}
 		nodeStack.push(statement);
 	}
-
+	return 0.0;
 };
 Value Eval(Node expr) {
 	if (auto val = std::get_if<Value>(&expr)) {
@@ -163,7 +153,7 @@ Value Eval(Node expr) {
 		if (varMap.contains(var->name)) {
 			return varMap[var->name];
 		}
-		throw ASTerror("Undeclared Variable");
+		throw LangError("Undeclared Variable", LangError::AST);
 	}
 	if (variantHas<Call>(expr)) {
 		auto request = std::get<Call>(expr);
@@ -176,11 +166,11 @@ Value Eval(Node expr) {
 			return CallBuiltinFunc(std::get<BuiltinFunc>(getFunc), argValues);
 		}
 		if (!variantHas<Function>(getFunc)) {
-			throw ASTerror("Invalid Call");
+			throw LangError("Invalid Call", LangError::AST);
 		}
 		Function calledFunc = std::get<Function>(getFunc);
 		if (request.args.size() != calledFunc.args.size()) {
-			throw ASTerror("Incomplete arguments");
+			throw LangError("Incomplete arguments", LangError::AST);
 		}
 		for (size_t index = 0; index < calledFunc.args.size(); index++) {
 			std::string var = calledFunc.args[index];
@@ -196,12 +186,12 @@ Value Eval(Node expr) {
 			if (auto val = std::get_if<double>(&obj)) {
 				return -(*val);
 			}
-			throw ASTerror("Invalid type");
+			throw LangError("Invalid type", LangError::AST);
 		case POSITIVE:
 			if (auto val = std::get_if<double>(&obj)) {
 				return +(*val);
 			}
-			throw ASTerror("Invalid type");
+			throw LangError("Invalid type", LangError::AST);
 			break;
 		default:
 			break;
@@ -212,7 +202,7 @@ Value Eval(Node expr) {
 		Value leftValue = Eval(*binOp->left);
 		Value rightValue = Eval(*binOp->right);
 		if (leftValue.index() != rightValue.index()) {
-			throw ASTerror("Mixed types");
+			throw LangError("Mixed types", LangError::AST);
 		}
 		if (variantHas<double>(leftValue)) {
 			return numCalc(binOp->type, std::get<double>(leftValue), std::get<double>(rightValue));

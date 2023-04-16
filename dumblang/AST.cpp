@@ -78,6 +78,15 @@ struct Scope {
 	bool isAtend() {
 		return parentScope == nullptr;
 	}
+	Value getVar(std::string varName) {
+		return varMap[varName];
+	}
+	bool containsVar(std::string varName) {
+		return varMap.contains(varName);
+	}
+	void assignVarOrAdd(std::string varName, Value val) {
+		varMap.insert_or_assign(varName, val);
+	}
 };
 Value PrintBuiltin(std::vector<Value> arguments) {
 	for (auto const& argument : arguments) {
@@ -134,17 +143,33 @@ Value CallBuiltinFunc(BuiltinFunc called, std::vector<Value> argValues) {
 	}
 	return called.funcPointer(argValues);
 }
+Scope EvalAssignment(Scope current,Assignment* ass) {
+	Value assignVal = Eval(*ass->value, current);
+	current.assignVarOrAdd(ass->varName, assignVal);
+	return current;
+}
 Value EvalBlock(std::vector<Node> block,Scope previous) {
 	Scope newScope = Scope(&previous, {});
 	for (auto& statement : block) {
 		Eval(statement,newScope);
 		if (auto ass = std::get_if<Assignment>(&statement)) {
-			Value assignVal = Eval(*ass->value, newScope);
-			newScope.varMap.insert_or_assign(ass->varName, assignVal);
+			newScope = EvalAssignment(newScope,ass);
 		}
 	}
 	return 0.0;
 };
+Value EvalVariable(Variable var,Scope currentScope) {
+	if (currentScope.containsVar(var.name)) {
+		return currentScope.getVar(var.name);
+	}
+	else {
+		if (currentScope.isAtend()) {
+			throw LangError("Undeclared Variable", LangError::AST);
+		}
+		return Eval(var, *currentScope.parentScope);
+
+	}
+}
 Value Eval(Node expr, Scope currentScope) {
 	if (auto val = std::get_if<Value>(&expr)) {
 		return *val;
@@ -153,18 +178,7 @@ Value Eval(Node expr, Scope currentScope) {
 		EvalBlock(block->body,currentScope);
 	}
 	if (auto var = std::get_if<Variable>(&expr)) {
-
-		if (currentScope.varMap.contains(var->name)) {
-			return currentScope.varMap[var->name];
-		}
-		else {
-			if (currentScope.isAtend()) {
-				throw LangError("Undeclared Variable", LangError::AST);
-			}
-			return Eval(*var, *currentScope.parentScope);
-		
-		}
-		
+		return EvalVariable(*var, currentScope);
 	}
 	if (variantHas<Call>(expr)) {
 		auto request = std::get<Call>(expr);
@@ -186,7 +200,7 @@ Value Eval(Node expr, Scope currentScope) {
 		for (size_t index = 0; index < calledFunc.args.size(); index++) {
 			std::string var = calledFunc.args[index];
 			Value assignVal = argValues[index];
-			currentScope.varMap.insert_or_assign(var, assignVal);
+			currentScope.assignVarOrAdd(var, assignVal);
 		}
 	}
 	if (auto unaryOp = std::get_if<UnaryNode>(&expr)) {

@@ -30,7 +30,6 @@ struct Call;
 struct Function;
 struct BuiltinFunc;
 struct Block;
-struct Scope;
 struct Return;
 using Value = std::variant<double, std::string, Function, BuiltinFunc>;
 
@@ -73,6 +72,13 @@ struct BuiltinFunc {
 	Value(*funcPointer)(std::vector<Value>);
 	int argSize;
 };
+struct Scope {
+	Scope* parentScope;
+	std::map<std::string, Value> varMap;
+	bool isAtend() {
+		return parentScope == nullptr;
+	}
+};
 Value PrintBuiltin(std::vector<Value> arguments) {
 	for (auto const& argument : arguments) {
 		if (variantHas<std::string>(argument)) {
@@ -90,7 +96,7 @@ Value InputBuiltin(std::vector<Value> arguments) {
 	std::getline(std::cin, out);
 	return Value(out);
 };
-std::map<std::string, Value> varMap = {
+std::map<std::string, Value> defMap = {
 	{"Test",2.0},
 	{"PI",3.146210},
 	{"print",BuiltinFunc(&PrintBuiltin,-1)},
@@ -128,39 +134,44 @@ Value CallBuiltinFunc(BuiltinFunc called, std::vector<Value> argValues) {
 	}
 	return called.funcPointer(argValues);
 }
-Value EvalBlock(std::vector<Node> block) {
-	std::stack<Node> nodeStack;
+Value EvalBlock(std::vector<Node> block,Scope previous) {
+	Scope newScope = Scope(&previous, {});
 	for (auto& statement : block) {
-		if (variantHas<Block>(statement)) {
-			for (auto& innerNode : std::get<Block>(statement).body) {
-				nodeStack.push(innerNode);
-			};
-			continue;
+		Eval(statement,newScope);
+		if (auto ass = std::get_if<Assignment>(&statement)) {
+			Value assignVal = Eval(*ass->value, newScope);
+			newScope.varMap.insert_or_assign(ass->varName, assignVal);
 		}
-		nodeStack.push(statement);
 	}
 	return 0.0;
 };
-Value Eval(Node expr) {
+Value Eval(Node expr, Scope currentScope) {
 	if (auto val = std::get_if<Value>(&expr)) {
 		return *val;
 	}
-	if (auto ass = std::get_if<Assignment>(&expr)) {
-		Value assignVal = Eval(*ass->value);
-		varMap.insert_or_assign(ass->varName, assignVal);
+	if (auto block = std::get_if<Block>(&expr)) {
+		EvalBlock(block->body,currentScope);
 	}
 	if (auto var = std::get_if<Variable>(&expr)) {
-		if (varMap.contains(var->name)) {
-			return varMap[var->name];
+
+		if (currentScope.varMap.contains(var->name)) {
+			return currentScope.varMap[var->name];
 		}
-		throw LangError("Undeclared Variable", LangError::AST);
+		else {
+			if (currentScope.isAtend()) {
+				throw LangError("Undeclared Variable", LangError::AST);
+			}
+			return Eval(*var, *currentScope.parentScope);
+		
+		}
+		
 	}
 	if (variantHas<Call>(expr)) {
 		auto request = std::get<Call>(expr);
-		Value getFunc = Eval(request.callee);
+		Value getFunc = Eval(request.callee, currentScope);
 		std::vector<Value> argValues;
 		for (size_t index = 0; index < request.args.size(); index++) {
-			argValues.push_back(Eval(request.args[index]));
+			argValues.push_back(Eval(request.args[index], currentScope));
 		}
 		if (variantHas<BuiltinFunc>(getFunc)) {
 			return CallBuiltinFunc(std::get<BuiltinFunc>(getFunc), argValues);
@@ -175,11 +186,11 @@ Value Eval(Node expr) {
 		for (size_t index = 0; index < calledFunc.args.size(); index++) {
 			std::string var = calledFunc.args[index];
 			Value assignVal = argValues[index];
-			varMap.insert_or_assign(var, assignVal);
+			currentScope.varMap.insert_or_assign(var, assignVal);
 		}
 	}
 	if (auto unaryOp = std::get_if<UnaryNode>(&expr)) {
-		Value obj = Eval(*unaryOp->object);
+		Value obj = Eval(*unaryOp->object, currentScope);
 		switch (unaryOp->type)
 		{
 		case NEGATE:
@@ -199,8 +210,8 @@ Value Eval(Node expr) {
 
 	}
 	if (auto binOp = std::get_if<BinaryNode>(&expr)) {
-		Value leftValue = Eval(*binOp->left);
-		Value rightValue = Eval(*binOp->right);
+		Value leftValue = Eval(*binOp->left,currentScope);
+		Value rightValue = Eval(*binOp->right,currentScope);
 		if (leftValue.index() != rightValue.index()) {
 			throw LangError("Mixed types", LangError::AST);
 		}

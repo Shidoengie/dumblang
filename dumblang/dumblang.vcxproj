@@ -142,6 +142,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="AST.cpp" />
+    <ClCompile Include="AstNodes.cpp" />
     <ClCompile Include="Scanner.cpp" />
     <ClCompile Include="Shlang.cpp" />
     <ClCompile Include="ShlangError.cpp" />
@@ -149,6 +150,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AST.h" />
+    <ClInclude Include="AstNodes.h" />
     <ClInclude Include="Scanner.h" />
     <ClInclude Include="ShlangError.h" />
     <ClInclude Include="Token.h" />

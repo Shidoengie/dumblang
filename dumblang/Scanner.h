@@ -16,10 +16,12 @@ private:
 	int line;
 	
 	std::vector<Token> TokenStream;
+	
 	char8_t advance();
 	bool isAtEnd();
 	char8_t peek();
 	char8_t peekNext();
+	bool match(char8_t expected);
 	void addToken(Token::Type type, std::variant<double, std::string> lexeme);
 	void num(char8_t LastChar);
 	void str();

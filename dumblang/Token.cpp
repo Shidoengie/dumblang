@@ -16,6 +16,8 @@ std::string Token::toString() {
 }
 std::map<std::string, Token::Type> GetKeywordMap() {
     std::map<std::string, Token::Type> KeywordMap = {
+        {"true",Token::TRUE},
+        {"false",Token::FALSE},
         {"print",Token::PRINT},
         {"input",Token::INPUT},
         {"func",Token::FUNC},
@@ -31,6 +33,8 @@ std::map<std::string, Token::Type> GetKeywordMap() {
 
 std::map<Token::Type, std::string> GetTokenMap() {
     std::map<Token::Type, std::string> TokenMap = {
+        {Token::TRUE,"TRUE"},
+        {Token::FALSE,"FALSE"},
         {Token::PRINT,"PRINT"},
         {Token::INPUT,"INPUT"},
         {Token::STR,"STR"},
@@ -49,12 +53,17 @@ std::map<Token::Type, std::string> GetTokenMap() {
         {Token::RBRACK,"RBRACK"},
         {Token::LESSER,"LESSER"},
         {Token::GREATER,"GREATER"},
+        {Token::LESSER_EQUAL,"LESSER_EQUAL"},
+        {Token::GREATER_EQUAL,"GREATER_EQUAL"},
         {Token::EQUAL,"EQUAL"},
         {Token::EOFL,"EOFL"},
         {Token::DOT,"DOT"},
         {Token::COMMA,"COMMA"},
         {Token::COLON,"COLON"},
-        {Token::BANG,"BANG"}
+        {Token::BANG,"BANG"},
+        {Token::ISDIFERENT,"ISDIFERENT"},
+        {Token::ISEQUAL,"ISEQUAL"},
+        {Token::MODULO,"MODULO"}
     };
     return TokenMap;
 }

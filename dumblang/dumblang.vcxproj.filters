@@ -33,6 +33,9 @@
     <ClCompile Include="ShlangError.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="AstNodes.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Token.h">
@@ -45,6 +48,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="ShlangError.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="AstNodes.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

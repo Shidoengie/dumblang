@@ -17,6 +17,7 @@ Scanner::Scanner(std::string _source)
 char8_t Scanner::advance() {
 	return source[current++];
 }
+
 bool Scanner::isAtEnd() {
 	return current >= source.length();
 }
@@ -26,6 +27,13 @@ char8_t Scanner::peek() {
 char8_t Scanner::peekNext() {
 	if (current + 1 >= source.length()) return '\0';
 	return source[current + 1];
+}
+bool Scanner::match(char8_t expected) {
+	if (isAtEnd() || source[current] != expected) {
+		return false;
+	}
+	current++;
+	return true;
 }
 void Scanner::addToken(Token::Type type, std::variant<double, std::string> lexeme)
 {
@@ -77,23 +85,34 @@ void Scanner::getToken() {
 	// Skip any whitespace.
 	switch (LastChar)
 	{
-	case '!':addToken(Token::BANG, "!"); break;
+	
 	case '.':addToken(Token::DOT, "."); break;
-	case '+':addToken(Token::PLUS, "+"); break;
-	case '-':addToken(Token::MINUS, "-"); break;
-	case '*':addToken(Token::STAR, "*"); break;
-	case '/':addToken(Token::SLASH, "/"); break;
-	case '=':addToken(Token::EQUAL, "="); break;
+	
+	case ',':addToken(Token::COMMA, ","); break;
 	case '{':addToken(Token::LBRACE, "{"); break;
 	case '}':addToken(Token::RBRACE, "}"); break;
 	case '(':addToken(Token::LPAREN, "("); break;
 	case ')':addToken(Token::RPAREN, ")"); break;
 	case '[':addToken(Token::LBRACK, "["); break;
 	case ']':addToken(Token::RBRACK, "]"); break;
-	case '<':addToken(Token::LESSER, "<"); break;
-	case '>':addToken(Token::GREATER, ">"); break;
-	case ',':addToken(Token::COMMA, ","); break;
+	case '<':
+		match('=') ? addToken(Token::LESSER_EQUAL, "<=") : addToken(Token::LESSER, "<");
+		break;
+	case '>':
+		match('=') ? addToken(Token::GREATER_EQUAL, ">=") : addToken(Token::GREATER, ">");
+		break;
+	case '+':addToken(Token::PLUS, "+"); break;
+	case '-':addToken(Token::MINUS, "-"); break;
+	case '*':addToken(Token::STAR, "*"); break;
+	case '/':addToken(Token::SLASH, "/"); break;
 	case ':':addToken(Token::COLON, ":"); break;
+	case '%':addToken(Token::MODULO, "%"); break;
+	case '!':
+		match('=') ? addToken(Token::ISDIFERENT, "!=") : addToken(Token::BANG, "!");
+		break;
+	case '=':
+		match('=') ? addToken(Token::ISEQUAL, "==") : addToken(Token::EQUAL, "=");
+		break;
 	case ';':
 		addToken(Token::EOL, ";");
 		line++;
@@ -110,7 +129,7 @@ void Scanner::getToken() {
 			identifier(LastChar);
 		}
 		else {
-			throw LangError("Unexpected char!", LangError::LEXER);
+			throw LangError("Unexpected char", LangError::LEXER);
 		}
 		break;
 	}

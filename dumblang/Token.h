@@ -29,9 +29,14 @@ public:
         DOT,
         LESSER,
         GREATER,
+        GREATER_EQUAL,
+        LESSER_EQUAL,
         COMMA,
         COLON,
         BANG,
+        MODULO,
+        ISEQUAL,
+        ISDIFERENT,
         // keywords
         PRINT,
         INPUT,
@@ -42,7 +47,9 @@ public:
         RETURN,
         LOOP,
         BREAK,
-        EOFL
+        EOFL,
+        FALSE,
+        TRUE,
     };
     Token::Type type;
     std::variant<double, std::string> lexeme;

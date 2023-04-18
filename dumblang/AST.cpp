@@ -1,5 +1,7 @@
 #include "AstNodes.h"
 #include "ShlangError.h"
+#include <ranges>
+
 template<class Ty, class... Types>
 constexpr bool variantHas(const std::variant<Types...>& var) noexcept {
 	return std::holds_alternative<Ty>(var);
@@ -45,6 +47,14 @@ std::map<string, Value> defMap = {
 	{"print",BuiltinFunc(&PrintBuiltin,-1)},
 	{"input",BuiltinFunc(&InputBuiltin,1)}
 };
+
+void stackBlockEval(Block block) {
+	std::stack<Node, std::vector<Node>> stack;
+	std::stack<Scope, std::vector<Scope>> variable_scopes;
+	for (auto const& expression : std::views::reverse(block.body)) {
+		stack.push(expression);
+	}
+}
 
 double numCalc(BinaryNode::Type opType, double leftValue, double rightValue) {
 	bool leftBool = BoolConvert(leftValue);

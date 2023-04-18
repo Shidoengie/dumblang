@@ -17,12 +17,13 @@ struct Function;
 struct BuiltinFunc;
 struct Block;
 struct Return;
+struct BranchNode;
 using Value = std::variant<double, std::string, Function, BuiltinFunc>;
 
 using Node = std::variant<
 	Value, BinaryNode, UnaryNode,
 	Variable, Assignment, Call,
-	Block, Return
+	Block, Return,BranchNode
 >;
 struct BinaryNode {
 	enum Type{
@@ -77,6 +78,11 @@ struct Function {
 struct BuiltinFunc {
 	Value(*funcPointer)(std::vector<Value>);
 	int argSize;
+};
+struct BranchNode {
+	Block ifBlock;
+	Block elseBlock;
+	Node* condition;
 };
 struct Scope {
 	Scope* parentScope;

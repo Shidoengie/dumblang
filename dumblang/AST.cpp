@@ -107,10 +107,21 @@ Value strCalc(BinaryNode::Type opType, string leftValue, string rightValue) {
 	case BinaryNode::ISDIFERENT:
 		return (double)(leftValue != rightValue);
 		break;
+	case BinaryNode::GREATER:
+		return (double)(leftValue > rightValue);
+		break;
+	case BinaryNode::GREATER_EQUAL:
+		return (double)(leftValue >= rightValue);
+		break;
+	case BinaryNode::LESSER:
+		return (double)(leftValue < rightValue);
+		break;
+	case BinaryNode::LESSER_EQUAL:
+		return (double)(leftValue <= rightValue);
+		break;
 	default:
 		throw LangError("Invalid operator", LangError::AST);
 	}
-	
 }
 Value CallBuiltinFunc(BuiltinFunc called, std::vector<Value> argValues) {
 	if (called.argSize != -1 && argValues.size() != called.argSize) {
@@ -138,7 +149,7 @@ Value EvalVariable(Variable var, Scope currentScope) {
 
 	}
 }
-Value EvalBlock(std::vector<Node> block, Scope previous) {
+void EvalBlock(std::vector<Node> block, Scope previous) {
 	Scope newScope = Scope(&previous, {});
 	for (auto& statement : block) {
 		EvalNode(statement, newScope);
@@ -146,7 +157,6 @@ Value EvalBlock(std::vector<Node> block, Scope previous) {
 			newScope = EvalAssignment(newScope, ass);
 		}
 	}
-	return 0.0;
 };
 
 Value EvalUnaryNode(UnaryNode unaryOp, Scope current) {
@@ -178,6 +188,7 @@ Value EvalBinaryNode(BinaryNode binOp, Scope current) {
 	Value leftValue = EvalNode(*binOp.left, current);
 	Value rightValue = EvalNode(*binOp.right, current);
 	if (leftValue.index() != rightValue.index()) {
+		
 		if (binOp.type == BinaryNode::ISEQUAL) {
 			return 0.0;
 		}
@@ -193,6 +204,7 @@ Value EvalBinaryNode(BinaryNode binOp, Scope current) {
 		return strCalc(binOp.type, std::get<string>(leftValue), std::get<string>(rightValue));
 	}
 }
+
 Value EvalCall(Call request, Scope currentScope) {
 	Value getFunc = EvalNode(request.callee, currentScope);
 	std::vector<Value> argValues;
@@ -242,5 +254,19 @@ Value EvalNode(Node expr, Scope currentScope) {
 	}
 	if (auto binOp = std::get_if<BinaryNode>(&expr)) {
 		return EvalBinaryNode(*binOp, currentScope);
+	}
+	if (auto branch = std::get_if<BranchNode>(&expr)) {
+		Value conditionVal = EvalNode(*branch->condition,currentScope);
+		if (!variantHas<double>(conditionVal)) {
+			throw LangError("Unexpected type Expected Number",LangError::AST);
+		}
+		bool condition = BoolConvert(std::get<double>(conditionVal));
+		if (condition) {
+			EvalBlock(branch->ifBlock.body,currentScope);
+		}
+		else if(branch->elseBlock.body.size() > 0){
+			
+			EvalBlock(branch->elseBlock.body, currentScope);
+		}
 	}
 };

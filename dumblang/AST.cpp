@@ -54,6 +54,18 @@ void stackBlockEval(Block block) {
 	for (auto const& expression : std::views::reverse(block.body)) {
 		stack.push(expression);
 	}
+	while (!stack.empty()) {
+		auto node = stack.top();
+		stack.pop();
+		if (variantHas<Block>(node)) {
+			Block block = std::get<Block>(node);
+			stack.push(")");
+			for (auto const& expression : std::views::reverse(block.body)) {
+				stack.push(expression);
+			}
+			stack.push("(");
+		}
+	}
 }
 
 double numCalc(BinaryNode::Type opType, double leftValue, double rightValue) {

@@ -18,8 +18,8 @@ struct BuiltinFunc;
 struct Block;
 struct Return;
 struct BranchNode;
-
-using Value = std::variant<double, std::string, Function, BuiltinFunc, Return> ;
+struct NoneType {};
+using Value = std::variant < NoneType, double, std::string, Function, BuiltinFunc, Return > ;
 
 using Node = std::variant<
 	Value, BinaryNode, UnaryNode,
@@ -81,8 +81,8 @@ struct BuiltinFunc {
 	int argSize;
 };
 struct BranchNode {
-	Block ifBlock;
-	Block elseBlock;
+	Block* ifBlock;
+	Block* elseBlock;
 	Node* condition;
 };
 struct Scope {

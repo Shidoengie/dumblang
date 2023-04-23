@@ -27,7 +27,7 @@
     <ClCompile Include="Scanner.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="AST.cpp">
+    <ClCompile Include="AST.ixx">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="ShlangError.cpp">
@@ -36,15 +36,15 @@
     <ClCompile Include="AstNodes.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Module.ixx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Token.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Scanner.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="AST.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="ShlangError.h">

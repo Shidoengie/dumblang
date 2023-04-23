@@ -1,7 +1,8 @@
+module;
 #include "AstNodes.h"
 #include "ShlangError.h"
-#include <ranges>
 
+export module AST;
 template<class Ty, class... Types>
 constexpr bool variantHas(const std::variant<Types...>& var) noexcept {
 	return std::holds_alternative<Ty>(var);
@@ -29,7 +30,7 @@ Value InputBuiltin(std::vector<Value> arguments) {
 	std::getline(std::cin, out);
 	return Value(out);
 };
-std::map<string, Value> defMap = {
+export std::map<string, Value> defMap = {
 	{"Test",2.0},
 	{"PI",3.146210},
 	{"print",BuiltinFunc(&PrintBuiltin,-1)},
@@ -118,7 +119,7 @@ Value CallBuiltinFunc(BuiltinFunc called, std::vector<Value> argValues) {
 	}
 	return called.funcPointer(argValues);
 }
-Value EvalNode(Node expr, Scope currentScope);
+export Value EvalNode(Node expr, Scope currentScope);
 
 Scope EvalAssignment(Scope current, Assignment* ass) {
 	Value controlType = EvalNode(*ass->value, current);
@@ -233,7 +234,7 @@ Value EvalCall(Call request, Scope current) {
 	return NoneType();
 }
 
-Value EvalNode(Node expr, Scope currentScope) {
+export Value EvalNode(Node expr, Scope currentScope) {
 	if (auto val = std::get_if<Value>(&expr)) {
 		return *val;
 	}
@@ -258,16 +259,19 @@ Value EvalNode(Node expr, Scope currentScope) {
 			throw LangError("Unexpected type Expected Number",LangError::AST);
 		}
 		bool condition = BoolConvert(std::get<double>(conditionVal));
+		if (branch->ifBlock == nullptr) {
+			throw LangError("Invalid Branch", LangError::AST);
+		}
 		if (condition) {
 
-			Value result = EvalNode(branch->ifBlock,currentScope);
+			Value result = EvalNode(*branch->ifBlock,currentScope);
 			if (auto val = std::get_if<Return>(&result)) {
 				return *val;
 			}
 			return NoneType();
 		}
-		else if(branch->elseBlock.body.size() > 0){
-			Value result = EvalNode(branch->elseBlock, currentScope);
+		else if(branch->elseBlock->body.size() > 0){
+			Value result = EvalNode(*branch->elseBlock, currentScope);
 			if (auto val = std::get_if<Return>(&result)) {
 				return *val;
 			}

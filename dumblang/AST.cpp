@@ -1,8 +1,4 @@
-module;
-#include "AstNodes.h"
-#include "ShlangError.h"
-
-export module AST;
+#include "AST.h"
 template<class Ty, class... Types>
 constexpr bool variantHas(const std::variant<Types...>& var) noexcept {
 	return std::holds_alternative<Ty>(var);
@@ -29,12 +25,6 @@ Value InputBuiltin(std::vector<Value> arguments) {
 	string out;
 	std::getline(std::cin, out);
 	return Value(out);
-};
-export std::map<string, Value> defMap = {
-	{"Test",2.0},
-	{"PI",3.146210},
-	{"print",BuiltinFunc(&PrintBuiltin,-1)},
-	{"input",BuiltinFunc(&InputBuiltin,1)}
 };
 
 double numCalc(BinaryNode::Type opType, double leftValue, double rightValue) {
@@ -119,15 +109,14 @@ Value CallBuiltinFunc(BuiltinFunc called, std::vector<Value> argValues) {
 	}
 	return called.funcPointer(argValues);
 }
-export Value EvalNode(Node expr, Scope currentScope);
+Value EvalNode(Node expr, Scope currentScope);
 
-Scope EvalAssignment(Scope current, Assignment* ass) {
+Value EvalAssignment(Scope current, Assignment* ass) {
 	Value controlType = EvalNode(*ass->value, current);
 	if (variantHas<NoneType>(controlType)) {
 		throw LangError("Cannot assign None to a variable",LangError::AST);
 	}
-	current.define(ass->varName, controlType);
-	return current;
+	return controlType;
 }
 
 Value EvalVariable(Variable var, Scope currentScope) {
@@ -145,13 +134,16 @@ Value EvalVariable(Variable var, Scope currentScope) {
 
 Value EvalBlock(std::vector<Node> block, Scope previous) {
 	Scope newScope = Scope(&previous, {});
+	if (block.size() == 0) {
+		return NoneType();
+	}
 	for (auto& statement : block) {
+		if (auto ass = std::get_if<Assignment>(&statement)) {
+			newScope.define(ass->varName,EvalAssignment(newScope, ass));
+		}
 		Value val = EvalNode(statement, newScope);
 		if (auto retVal = std::get_if<Return>(&val)) {
 			return *retVal;
-		}
-		if (auto ass = std::get_if<Assignment>(&statement)) {
-			newScope = EvalAssignment(newScope, ass);
 		}
 	}
 	return NoneType();
@@ -233,8 +225,33 @@ Value EvalCall(Call request, Scope current) {
 	}
 	return NoneType();
 }
+Value EvalBranch(BranchNode branch, Scope current) {
+	Value conditionVal = EvalNode(*branch.condition, current);
+	if (!variantHas<double>(conditionVal)) {
+		throw LangError("Unexpected type Expected Number", LangError::AST);
+	}
+	bool condition = BoolConvert(std::get<double>(conditionVal));
+	if (branch.ifBlock == nullptr) {
+		throw LangError("Invalid Branch", LangError::AST);
+	}
+	if (condition) {
 
-export Value EvalNode(Node expr, Scope currentScope) {
+		Value result = EvalNode(*branch.ifBlock, current);
+		if (auto val = std::get_if<Return>(&result)) {
+			return *val;
+		}
+		return NoneType();
+	}
+	else if (branch.elseBlock != nullptr) {
+		Value result = EvalNode(*branch.elseBlock, current);
+		if (auto val = std::get_if<Return>(&result)) {
+			return *val;
+		}
+		return NoneType();
+	}
+	return NoneType();
+}
+Value EvalNode(Node expr, Scope currentScope) {
 	if (auto val = std::get_if<Value>(&expr)) {
 		return *val;
 	}
@@ -254,29 +271,7 @@ export Value EvalNode(Node expr, Scope currentScope) {
 		return EvalBinaryNode(*binOp, currentScope);
 	}
 	if (auto branch = std::get_if<BranchNode>(&expr)) {
-		Value conditionVal = EvalNode(*branch->condition,currentScope);
-		if (!variantHas<double>(conditionVal)) {
-			throw LangError("Unexpected type Expected Number",LangError::AST);
-		}
-		bool condition = BoolConvert(std::get<double>(conditionVal));
-		if (branch->ifBlock == nullptr) {
-			throw LangError("Invalid Branch", LangError::AST);
-		}
-		if (condition) {
-
-			Value result = EvalNode(*branch->ifBlock,currentScope);
-			if (auto val = std::get_if<Return>(&result)) {
-				return *val;
-			}
-			return NoneType();
-		}
-		else if(branch->elseBlock->body.size() > 0){
-			Value result = EvalNode(*branch->elseBlock, currentScope);
-			if (auto val = std::get_if<Return>(&result)) {
-				return *val;
-			}
-
-		}
+		return EvalBranch(*branch,currentScope);
 	}
 };
 

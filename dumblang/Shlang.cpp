@@ -1,42 +1,10 @@
-﻿import AST;
-#include <variant>
-#include <iostream>
-#include <vector>
-#include <map>
-#include <string>
-#include "Token.h"
+﻿
 #include "Scanner.h"
-#include "ShlangError.h"
-#include "AstNodes.h"
-constexpr bool variantHas(const std::variant<Types...>& var) noexcept {
-    return std::holds_alternative<Ty>(var);
-}
-Value PrintBuiltin(std::vector<Value> arguments) {
-    for (auto const& argument : arguments) {
-        if (variantHas<std::string>(argument)) {
-            std::cout << std::get<std::string>(argument) << '\n';
-        }
-        if (variantHas<double>(argument)) {
-            std::cout << std::get<double>(argument) << '\n';
-        }
-    }
-    return NoneType();
-}
-Value InputBuiltin(std::vector<Value> arguments) {
-    PrintBuiltin(arguments);
-    std::string out;
-    std::getline(std::cin, out);
-    return Value(out);
-};
-int main(int argc, char* argv[]) {
+#include "AST.h"
 
-    std::map<std::string, Value> base = {
-    {"Test",2.0},
-    {"PI",3.146210},
-    {"print",BuiltinFunc(&PrintBuiltin,-1)},
-    {"input",BuiltinFunc(&InputBuiltin,1)}
-    };
-    Scope env = Scope(nullptr, base);
+
+int main(int argc, char* argv[]) {
+    Scope env = Scope(nullptr, defMap);
 	std::vector<Node> functionBody = {
 	Assignment("as",new Node(Variable("par1"))),
 	Return(new Node(BinaryNode(BinaryNode::MULTIPLY, new Node(Variable("as")), new Node(Value(2.0))))),

@@ -27,16 +27,13 @@
     <ClCompile Include="Scanner.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="AST.ixx">
+    <ClCompile Include="AST.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="ShlangError.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="AstNodes.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Module.ixx">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -51,6 +48,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="AstNodes.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="AST.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

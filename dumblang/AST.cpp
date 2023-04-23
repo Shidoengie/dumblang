@@ -5,6 +5,7 @@ constexpr bool variantHas(const std::variant<Types...>& var) noexcept {
 }
 using std::cout;
 using std::string;
+static Scope current = Scope();
 bool BoolConvert(double val) {
 	bool out = (val != 0.0) ? true : false;
 	return out;
@@ -109,7 +110,7 @@ Value CallBuiltinFunc(BuiltinFunc called, std::vector<Value> argValues) {
 	}
 	return called.funcPointer(argValues);
 }
-Value EvalNode(Node expr, Scope currentScope);
+Value EvalNode(Node expr);
 
 Value EvalAssignment(Scope current, Assignment* ass) {
 	Value controlType = EvalNode(*ass->value, current);
@@ -119,17 +120,8 @@ Value EvalAssignment(Scope current, Assignment* ass) {
 	return controlType;
 }
 
-Value EvalVariable(Variable var, Scope currentScope) {
-	if (currentScope.containsVar(var.name)) {
-		return currentScope.getVar(var.name);
-	}
-	else {
-		if (currentScope.isAtend()) {
-			throw LangError("Undeclared Variable", LangError::AST);
-		}
-		return EvalNode(var, *currentScope.parentScope);
-	}
-
+Value EvalVariable(Variable var) {
+	return current.getVar(var.name);
 }
 
 Value EvalBlock(std::vector<Node> block, Scope previous) {
@@ -149,7 +141,7 @@ Value EvalBlock(std::vector<Node> block, Scope previous) {
 	return NoneType();
 };
 
-Value EvalUnaryNode(UnaryNode unaryOp, Scope current) {
+Value EvalUnaryNode(UnaryNode unaryOp) {
 	Value obj = EvalNode(*unaryOp.object, current);
 	if(auto val = std::get_if<Return>(&obj)) {
 		obj = EvalNode(*val->object,current);
@@ -177,7 +169,7 @@ Value EvalUnaryNode(UnaryNode unaryOp, Scope current) {
 		break;
 	}
 };
-Value EvalBinaryNode(BinaryNode binOp, Scope current) {
+Value EvalBinaryNode(BinaryNode binOp) {
 	Value leftValue = EvalNode(*binOp.left, current);
 	Value rightValue = EvalNode(*binOp.right, current);
 	if (leftValue.index() != rightValue.index()) {
@@ -198,7 +190,7 @@ Value EvalBinaryNode(BinaryNode binOp, Scope current) {
 	}
 }
 
-Value EvalCall(Call request, Scope current) {
+Value EvalCall(Call request) {
 	Value getFunc = EvalNode(request.callee, current);
 	std::vector<Value> argValues;
 	for (size_t index = 0; index < request.args.size(); index++) {
@@ -225,7 +217,7 @@ Value EvalCall(Call request, Scope current) {
 	}
 	return NoneType();
 }
-Value EvalBranch(BranchNode branch, Scope current) {
+Value EvalBranch(BranchNode branch) {
 	Value conditionVal = EvalNode(*branch.condition, current);
 	if (!variantHas<double>(conditionVal)) {
 		throw LangError("Unexpected type Expected Number", LangError::AST);
@@ -251,27 +243,27 @@ Value EvalBranch(BranchNode branch, Scope current) {
 	}
 	return NoneType();
 }
-Value EvalNode(Node expr, Scope currentScope) {
+Value EvalNode(Node expr) {
 	if (auto val = std::get_if<Value>(&expr)) {
 		return *val;
 	}
 	if (auto block = std::get_if<Block>(&expr)) {
-		return EvalBlock(block->body,currentScope);
+		return EvalBlock(block->body,Scope());
 	}
 	if (auto var = std::get_if<Variable>(&expr)) {
-		return EvalVariable(*var, currentScope);
+		return EvalVariable(*var);
 	}
 	if (auto request = std::get_if<Call>(&expr)) {
-		return EvalCall(*request, currentScope);
+		return EvalCall(*request);
 	}
 	if (auto unaryOp = std::get_if<UnaryNode>(&expr)) {
-		return EvalUnaryNode(*unaryOp,currentScope);
+		return EvalUnaryNode(*unaryOp);
 	}
 	if (auto binOp = std::get_if<BinaryNode>(&expr)) {
-		return EvalBinaryNode(*binOp, currentScope);
+		return EvalBinaryNode(*binOp);
 	}
 	if (auto branch = std::get_if<BranchNode>(&expr)) {
-		return EvalBranch(*branch,currentScope);
+		return EvalBranch(*branch);
 	}
 };
 

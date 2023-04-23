@@ -7,7 +7,7 @@
 #include <exception>
 #include <stack>
 #include <string>
-
+#include <optional>
 struct Assignment;
 struct Variable;
 struct BinaryNode;

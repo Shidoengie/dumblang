@@ -18,12 +18,13 @@ struct BuiltinFunc;
 struct Block;
 struct Return;
 struct BranchNode;
-using Value = std::variant<double, std::string, Function, BuiltinFunc>;
+
+using Value = std::variant<double, std::string, Function, BuiltinFunc, Return> ;
 
 using Node = std::variant<
 	Value, BinaryNode, UnaryNode,
 	Variable, Assignment, Call,
-	Block, Return,BranchNode
+	Block, BranchNode
 >;
 struct BinaryNode {
 	enum Type{

@@ -8,18 +8,6 @@ constexpr bool variantHas(const std::variant<Types...>& var) noexcept {
 }
 using std::cout;
 using std::string;
-class ReturnException : public std::exception
-{
-private:
-	Value val_;
-public:
-	virtual const Value what() {
-		return val_;
-	}
-	ReturnException(Value val) {
-		val_ = val;
-	}
-};
 bool BoolConvert(double val) {
 	bool out = (val != 0.0) ? true : false;
 	return out;
@@ -33,7 +21,7 @@ Value PrintBuiltin(std::vector<Value> arguments) {
 			cout << std::get<double>(argument) << '\n';
 		}
 	}
-	return 0.0;
+	return NoneType();
 }
 Value InputBuiltin(std::vector<Value> arguments) {
 	PrintBuiltin(arguments);
@@ -47,26 +35,6 @@ std::map<string, Value> defMap = {
 	{"print",BuiltinFunc(&PrintBuiltin,-1)},
 	{"input",BuiltinFunc(&InputBuiltin,1)}
 };
-
-void stackBlockEval(Block block) {
-	std::stack<Node, std::vector<Node>> stack;
-	std::stack<Scope, std::vector<Scope>> variable_scopes;
-	for (auto const& expression : std::views::reverse(block.body)) {
-		stack.push(expression);
-	}
-	while (!stack.empty()) {
-		auto node = stack.top();
-		stack.pop();
-		if (variantHas<Block>(node)) {
-			Block block = std::get<Block>(node);
-			stack.push(")");
-			for (auto const& expression : std::views::reverse(block.body)) {
-				stack.push(expression);
-			}
-			stack.push("(");
-		}
-	}
-}
 
 double numCalc(BinaryNode::Type opType, double leftValue, double rightValue) {
 	bool leftBool = BoolConvert(leftValue);
@@ -92,7 +60,6 @@ double numCalc(BinaryNode::Type opType, double leftValue, double rightValue) {
 		return (double)(leftBool && rightBool);
 		break;
 	case BinaryNode::OR:
-		
 		return (double)(leftBool || rightBool);
 		break;
 	case BinaryNode::ISEQUAL:
@@ -154,8 +121,11 @@ Value CallBuiltinFunc(BuiltinFunc called, std::vector<Value> argValues) {
 Value EvalNode(Node expr, Scope currentScope);
 
 Scope EvalAssignment(Scope current, Assignment* ass) {
-	Value assignVal = EvalNode(*ass->value, current);
-	current.define(ass->varName, assignVal);
+	Value controlType = EvalNode(*ass->value, current);
+	if (variantHas<NoneType>(controlType)) {
+		throw LangError("Cannot assign None to a variable",LangError::AST);
+	}
+	current.define(ass->varName, controlType);
 	return current;
 }
 
@@ -168,21 +138,29 @@ Value EvalVariable(Variable var, Scope currentScope) {
 			throw LangError("Undeclared Variable", LangError::AST);
 		}
 		return EvalNode(var, *currentScope.parentScope);
-
 	}
+
 }
-void EvalBlock(std::vector<Node> block, Scope previous) {
+
+Value EvalBlock(std::vector<Node> block, Scope previous) {
 	Scope newScope = Scope(&previous, {});
 	for (auto& statement : block) {
-		EvalNode(statement, newScope);
+		Value val = EvalNode(statement, newScope);
+		if (auto retVal = std::get_if<Return>(&val)) {
+			return *retVal;
+		}
 		if (auto ass = std::get_if<Assignment>(&statement)) {
 			newScope = EvalAssignment(newScope, ass);
 		}
 	}
+	return NoneType();
 };
 
 Value EvalUnaryNode(UnaryNode unaryOp, Scope current) {
 	Value obj = EvalNode(*unaryOp.object, current);
+	if(auto val = std::get_if<Return>(&obj)) {
+		obj = EvalNode(*val->object,current);
+	}
 	switch (unaryOp.type)
 	{
 	case UnaryNode::NEGATE:
@@ -227,11 +205,11 @@ Value EvalBinaryNode(BinaryNode binOp, Scope current) {
 	}
 }
 
-Value EvalCall(Call request, Scope currentScope) {
-	Value getFunc = EvalNode(request.callee, currentScope);
+Value EvalCall(Call request, Scope current) {
+	Value getFunc = EvalNode(request.callee, current);
 	std::vector<Value> argValues;
 	for (size_t index = 0; index < request.args.size(); index++) {
-		argValues.push_back(EvalNode(request.args[index], currentScope));
+		argValues.push_back(EvalNode(request.args[index], current));
 	}
 	if (variantHas<BuiltinFunc>(getFunc)) {
 		return CallBuiltinFunc(std::get<BuiltinFunc>(getFunc), argValues);
@@ -246,30 +224,27 @@ Value EvalCall(Call request, Scope currentScope) {
 	for (size_t index = 0; index < calledFunc.args.size(); index++) {
 		string var = calledFunc.args[index];
 		Value assignVal = argValues[index];
-		currentScope.define(var, assignVal);
+		current.define(var, assignVal);
 	}
-	try {
-		EvalNode(calledFunc.block, currentScope);
+	Value retVal = EvalNode(calledFunc.block,current);
+	if (auto val = std::get_if<Return>(&retVal)) {
+		return EvalNode(*val->object, current);
 	}
-	catch (ReturnException val) {
-		return val.what();
-	}
+	return NoneType();
 }
+
 Value EvalNode(Node expr, Scope currentScope) {
 	if (auto val = std::get_if<Value>(&expr)) {
 		return *val;
 	}
 	if (auto block = std::get_if<Block>(&expr)) {
-		EvalBlock(block->body,currentScope);
+		return EvalBlock(block->body,currentScope);
 	}
 	if (auto var = std::get_if<Variable>(&expr)) {
 		return EvalVariable(*var, currentScope);
 	}
 	if (auto request = std::get_if<Call>(&expr)) {
 		return EvalCall(*request, currentScope);
-	}
-	if (auto ret = std::get_if<Return>(&expr)) {
-		throw ReturnException(EvalNode(*ret->object,currentScope));
 	}
 	if (auto unaryOp = std::get_if<UnaryNode>(&expr)) {
 		return EvalUnaryNode(*unaryOp,currentScope);
@@ -284,11 +259,20 @@ Value EvalNode(Node expr, Scope currentScope) {
 		}
 		bool condition = BoolConvert(std::get<double>(conditionVal));
 		if (condition) {
-			EvalBlock(branch->ifBlock.body,currentScope);
+
+			Value result = EvalNode(branch->ifBlock,currentScope);
+			if (auto val = std::get_if<Return>(&result)) {
+				return *val;
+			}
+			return NoneType();
 		}
 		else if(branch->elseBlock.body.size() > 0){
-			
-			EvalBlock(branch->elseBlock.body, currentScope);
+			Value result = EvalNode(branch->elseBlock, currentScope);
+			if (auto val = std::get_if<Return>(&result)) {
+				return *val;
+			}
+
 		}
 	}
 };
+

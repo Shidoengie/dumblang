@@ -18,13 +18,16 @@ struct BuiltinFunc;
 struct Block;
 struct Return;
 struct BranchNode;
+struct WhileNode;
+struct Break {};
 struct NoneType {};
-using Value = std::variant < NoneType, double, std::string, Function, BuiltinFunc, Return > ;
+using Value = std::variant < NoneType, double, std::string, Function, BuiltinFunc> ;
 
-using Node = std::variant<
+using Node = std::variant <
 	Value, BinaryNode, UnaryNode,
 	Variable, Assignment, Call,
-	Block, BranchNode
+	Block, BranchNode, Return,
+	WhileNode, Break
 >;
 struct BinaryNode {
 	enum Type{
@@ -81,9 +84,13 @@ struct BuiltinFunc {
 	int argSize;
 };
 struct BranchNode {
+	Node* condition;
 	Block* ifBlock;
 	Block* elseBlock;
+};
+struct WhileNode {
 	Node* condition;
+	Block* loopBlock;
 };
 struct Scope {
 	Scope* parentScope;

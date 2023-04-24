@@ -5,11 +5,9 @@ constexpr bool variantHas(const std::variant<Types...>& var) noexcept {
 }
 using std::cout;
 using std::string;
-static Scope current = Scope();
-bool BoolConvert(double val) {
-	bool out = (val != 0.0) ? true : false;
-	return out;
-};
+
+
+
 Value PrintBuiltin(std::vector<Value> arguments) {
 	for (auto const& argument : arguments) {
 		if (variantHas<string>(argument)) {
@@ -27,8 +25,26 @@ Value InputBuiltin(std::vector<Value> arguments) {
 	std::getline(std::cin, out);
 	return Value(out);
 };
+Value StringToNum(std::vector<Value> arguments) {
+	Value argument = arguments[0];
+	if (auto val = std::get_if<string>(&argument)) {
+		try {
+			return std::stod(*val);
+		}
+		catch (std::invalid_argument) {
+			throw LangError("Invalid string format",LangError::AST);
+		}
+	}
+	if (variantHas<double>(argument)) {
+		return argument;
+	}
 
-double numCalc(BinaryNode::Type opType, double leftValue, double rightValue) {
+}
+bool Interpreter::BoolConvert(double val) {
+	bool out = (val != 0.0) ? true : false;
+	return out;
+};
+double Interpreter::numCalc(BinaryNode::Type opType, double leftValue, double rightValue) {
 	bool leftBool = BoolConvert(leftValue);
 	bool rightBool = BoolConvert(rightValue);
 	switch (opType)
@@ -76,7 +92,7 @@ double numCalc(BinaryNode::Type opType, double leftValue, double rightValue) {
 		break;
 	}
 }
-Value strCalc(BinaryNode::Type opType, string leftValue, string rightValue) {
+Value Interpreter::strCalc(BinaryNode::Type opType, string leftValue, string rightValue) {
 	switch (opType)
 	{
 	case BinaryNode::ADD:
@@ -104,7 +120,7 @@ Value strCalc(BinaryNode::Type opType, string leftValue, string rightValue) {
 		throw LangError("Invalid operator", LangError::AST);
 	}
 }
-Value CallBuiltinFunc(BuiltinFunc called, std::vector<Value> argValues) {
+Value Interpreter::CallBuiltinFunc(BuiltinFunc called, std::vector<Value> argValues) {
 	if (called.argSize != -1 && argValues.size() != called.argSize) {
 		throw LangError("Incomplete arguments", LangError::AST);
 	}
@@ -112,40 +128,33 @@ Value CallBuiltinFunc(BuiltinFunc called, std::vector<Value> argValues) {
 }
 Value EvalNode(Node expr);
 
-Value EvalAssignment(Scope current, Assignment* ass) {
-	Value controlType = EvalNode(*ass->value, current);
+Value Interpreter::EvalAssignment(Assignment ass) {
+	Value controlType = EvalNode(*ass.value);
 	if (variantHas<NoneType>(controlType)) {
 		throw LangError("Cannot assign None to a variable",LangError::AST);
 	}
+	current.define(ass.varName, controlType);
 	return controlType;
 }
 
-Value EvalVariable(Variable var) {
+Value Interpreter::EvalVariable(Variable var) {
 	return current.getVar(var.name);
 }
 
-Value EvalBlock(std::vector<Node> block, Scope previous) {
-	Scope newScope = Scope(&previous, {});
+Value Interpreter::EvalBlock(std::vector<Node> block, Scope scopeBlock) {
+	scopeBlock.parentScope = &current;
 	if (block.size() == 0) {
 		return NoneType();
 	}
 	for (auto& statement : block) {
-		if (auto ass = std::get_if<Assignment>(&statement)) {
-			newScope.define(ass->varName,EvalAssignment(newScope, ass));
-		}
-		Value val = EvalNode(statement, newScope);
-		if (auto retVal = std::get_if<Return>(&val)) {
-			return *retVal;
-		}
+		current = *scopeBlock.parentScope;
+		Value val = EvalNode(statement);
 	}
 	return NoneType();
 };
 
-Value EvalUnaryNode(UnaryNode unaryOp) {
-	Value obj = EvalNode(*unaryOp.object, current);
-	if(auto val = std::get_if<Return>(&obj)) {
-		obj = EvalNode(*val->object,current);
-	}
+Value Interpreter::EvalUnaryNode(UnaryNode unaryOp) {
+	Value obj = EvalNode(*unaryOp.object);
 	switch (unaryOp.type)
 	{
 	case UnaryNode::NEGATE:
@@ -169,9 +178,9 @@ Value EvalUnaryNode(UnaryNode unaryOp) {
 		break;
 	}
 };
-Value EvalBinaryNode(BinaryNode binOp) {
-	Value leftValue = EvalNode(*binOp.left, current);
-	Value rightValue = EvalNode(*binOp.right, current);
+Value Interpreter::EvalBinaryNode(BinaryNode binOp) {
+	Value leftValue = EvalNode(*binOp.left);
+	Value rightValue = EvalNode(*binOp.right);
 	if (leftValue.index() != rightValue.index()) {
 		
 		if (binOp.type == BinaryNode::ISEQUAL) {
@@ -190,11 +199,11 @@ Value EvalBinaryNode(BinaryNode binOp) {
 	}
 }
 
-Value EvalCall(Call request) {
-	Value getFunc = EvalNode(request.callee, current);
+Value Interpreter::EvalCall(Call request) {
+	Value getFunc = EvalNode(request.callee);
 	std::vector<Value> argValues;
 	for (size_t index = 0; index < request.args.size(); index++) {
-		argValues.push_back(EvalNode(request.args[index], current));
+		argValues.push_back(EvalNode(request.args[index]));
 	}
 	if (variantHas<BuiltinFunc>(getFunc)) {
 		return CallBuiltinFunc(std::get<BuiltinFunc>(getFunc), argValues);
@@ -211,14 +220,16 @@ Value EvalCall(Call request) {
 		Value assignVal = argValues[index];
 		current.define(var, assignVal);
 	}
-	Value retVal = EvalNode(calledFunc.block,current);
-	if (auto val = std::get_if<Return>(&retVal)) {
-		return EvalNode(*val->object, current);
+	try{
+		EvalNode(EvalNode(calledFunc.block));
+	}
+	catch (ReturnException value) {
+		return value.what();
 	}
 	return NoneType();
 }
-Value EvalBranch(BranchNode branch) {
-	Value conditionVal = EvalNode(*branch.condition, current);
+Value Interpreter::EvalBranch(BranchNode branch) {
+	Value conditionVal = EvalNode(*branch.condition);
 	if (!variantHas<double>(conditionVal)) {
 		throw LangError("Unexpected type Expected Number", LangError::AST);
 	}
@@ -227,23 +238,37 @@ Value EvalBranch(BranchNode branch) {
 		throw LangError("Invalid Branch", LangError::AST);
 	}
 	if (condition) {
-
-		Value result = EvalNode(*branch.ifBlock, current);
-		if (auto val = std::get_if<Return>(&result)) {
-			return *val;
-		}
+		EvalNode(*branch.ifBlock);
 		return NoneType();
 	}
 	else if (branch.elseBlock != nullptr) {
-		Value result = EvalNode(*branch.elseBlock, current);
-		if (auto val = std::get_if<Return>(&result)) {
-			return *val;
-		}
+		EvalNode(*branch.elseBlock);
 		return NoneType();
 	}
 	return NoneType();
 }
-Value EvalNode(Node expr) {
+Value Interpreter::EvalWhile(WhileNode loop) {
+	bool condition = true;
+	while (true) {
+		Value conditionVal = EvalNode(*loop.condition);
+		if (!variantHas<double>(conditionVal)) {
+			throw LangError("Unexpected type Expected Number", LangError::AST);
+		}
+		condition = BoolConvert(std::get<double>(conditionVal));
+		if (!condition) {
+			break;
+		}
+		try {
+			EvalNode(*loop.loopBlock);
+		}
+		catch (BreakException) {
+			break;
+		}
+
+	}
+
+}
+Value Interpreter::EvalNode(Node expr) {
 	if (auto val = std::get_if<Value>(&expr)) {
 		return *val;
 	}
@@ -265,5 +290,34 @@ Value EvalNode(Node expr) {
 	if (auto branch = std::get_if<BranchNode>(&expr)) {
 		return EvalBranch(*branch);
 	}
+	if (auto ass = std::get_if<Assignment>(&expr)) {
+		return EvalAssignment(*ass);
+	}
+	if (auto ret = std::get_if<Return>(&expr)) {
+		throw ReturnException(EvalNode(*ret->object));
+	}
+	if (auto loop = std::get_if<WhileNode>(&expr)) {
+		EvalWhile(*loop);
+	}
+	if (auto brk = std::get_if<Break>(&expr)) {
+		throw BreakException();
+	}
+	
 };
 
+Interpreter::Interpreter(std::map<string, Value> base) {
+	current = Scope(nullptr, base);
+}
+Interpreter::Interpreter(Scope base) {
+	current = base;
+}
+Interpreter::Interpreter() {
+	std::map<string, Value> defMap = {
+		{"Test",2.0},
+		{"PI",3.146210},
+		{"strToNum",BuiltinFunc(&StringToNum,1)},
+		{"print",BuiltinFunc(&PrintBuiltin,-1)},
+		{"input",BuiltinFunc(&InputBuiltin,1)}
+	};
+	current = Scope(nullptr, defMap);
+}

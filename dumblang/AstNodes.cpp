@@ -18,9 +18,8 @@ Value Scope::getVar(std::string varName) {
     auto current = this;
     
     while (current != nullptr) {
-        std::cout << varName << "\n";
-        std::cout << current->varMap.contains(varName) << "\n";
-        if (current->varMap.contains(varName)) { //`find` returns the end iterator if there is no such element.
+        
+        if (current->varMap.contains(varName)) {
             
             return current->varMap[varName];
         }

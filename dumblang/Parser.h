@@ -1,5 +1,5 @@
 #pragma once
-class AST
+class Parser
 {
 };
 

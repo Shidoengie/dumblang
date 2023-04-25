@@ -5,6 +5,7 @@
 #include <map>
 #include <string>
 #include "Token.h"
+
 class Scanner
 {
 public:

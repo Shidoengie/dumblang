@@ -7,7 +7,7 @@
 #include <exception>
 #include <stack>
 #include <string>
-
+#include <optional>
 struct Assignment;
 struct Variable;
 struct BinaryNode;
@@ -18,12 +18,16 @@ struct BuiltinFunc;
 struct Block;
 struct Return;
 struct BranchNode;
-using Value = std::variant<double, std::string, Function, BuiltinFunc>;
+struct WhileNode;
+struct Break {};
+struct NoneType {};
+using Value = std::variant < NoneType, double, std::string, Function, BuiltinFunc> ;
 
-using Node = std::variant<
+using Node = std::variant <
 	Value, BinaryNode, UnaryNode,
 	Variable, Assignment, Call,
-	Block, Return,BranchNode
+	Block, BranchNode, Return,
+	WhileNode, Break
 >;
 struct BinaryNode {
 	enum Type{
@@ -70,6 +74,14 @@ struct Return {
 struct Call {
 	Variable callee;
 	std::vector<Node> args;
+	Call(std::string callee_, std::vector<Node> args_) {
+		this->callee = Variable(callee_);
+		this->args = args_;
+	}
+	Call(Variable callee_, std::vector<Node> args_) {
+		this->callee = callee_;
+		this->args = args_;
+	}
 };
 struct Function {
 	Block block;
@@ -80,9 +92,13 @@ struct BuiltinFunc {
 	int argSize;
 };
 struct BranchNode {
-	Block ifBlock;
-	Block elseBlock;
 	Node* condition;
+	Block* ifBlock;
+	Block* elseBlock;
+};
+struct WhileNode {
+	Node* condition;
+	Block* loopBlock;
 };
 struct Scope {
 	Scope* parentScope;

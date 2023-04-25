@@ -44,13 +44,13 @@
     <ClInclude Include="Scanner.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="AST.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="ShlangError.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="AstNodes.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="AST.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

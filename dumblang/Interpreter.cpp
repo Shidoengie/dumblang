@@ -1,10 +1,9 @@
-#include "AST.h"
+#include "Interpreter.h"
+
 template<class Ty, class... Types>
 constexpr bool variantHas(const std::variant<Types...>& var) noexcept {
 	return std::holds_alternative<Ty>(var);
 }
-using std::cout;
-using std::string;
 
 
 
@@ -126,8 +125,6 @@ Value Interpreter::CallBuiltinFunc(BuiltinFunc called, std::vector<Value> argVal
 	}
 	return called.funcPointer(argValues);
 }
-Value EvalNode(Node expr);
-
 Value Interpreter::EvalAssignment(Assignment ass) {
 	Value controlType = EvalNode(*ass.value);
 	if (variantHas<NoneType>(controlType)) {
@@ -231,6 +228,7 @@ Value Interpreter::EvalCall(Call request) {
 Value Interpreter::EvalBranch(BranchNode branch) {
 	Value conditionVal = EvalNode(*branch.condition);
 	if (!variantHas<double>(conditionVal)) {
+
 		throw LangError("Unexpected type Expected Number", LangError::AST);
 	}
 	bool condition = BoolConvert(std::get<double>(conditionVal));

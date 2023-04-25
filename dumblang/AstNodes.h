@@ -74,6 +74,14 @@ struct Return {
 struct Call {
 	Variable callee;
 	std::vector<Node> args;
+	Call(std::string callee_, std::vector<Node> args_) {
+		this->callee = Variable(callee_);
+		this->args = args_;
+	}
+	Call(Variable callee_, std::vector<Node> args_) {
+		this->callee = callee_;
+		this->args = args_;
+	}
 };
 struct Function {
 	Block block;

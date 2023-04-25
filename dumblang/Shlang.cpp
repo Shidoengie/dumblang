@@ -3,48 +3,7 @@
 #include "AST.h"
 
 
-int main(int argc, char* argv[]) {
-	std::vector<Node> functionBody = {
-	Assignment("as",new Node(Variable("par1"))),
-	Return(new Node(BinaryNode(BinaryNode::MULTIPLY, new Node(Variable("as")), new Node(Value(2.0))))),
-	};
-    Node func = Function(Block(functionBody), { "par1" });
-    Block ifBlock = Block({ Call(Variable("print"),{ "true" }) });
-    Block elseBlock = Block({ Call(Variable("print"),{ "false" }) });
-    Block loopblock = Block(
-        {
-            Assignment("res",new Node(BinaryNode(BinaryNode::MULTIPLY, new Node(Variable("res")), new Node(Value(2.0))))),
-            Call(Variable("print"),{Variable("res")}) 
-            
-        }
-    );
-    std::vector<Node> program = {
 
-        Assignment("var",new Node(Call(Variable("input"),{"1-true 0-false:"}))),
-        Assignment("conv",new Node(Call(Variable("strToNum"),{Variable("var")}))),
-        BranchNode(new Node(Variable("conv")),&ifBlock,&elseBlock),
-        Assignment("mult2",&func),
-        Assignment("res",new Node(Call(Variable("mult2"),{Value(2.0)}))),
-        Call(Variable("print"),{Variable("res")}),
-        WhileNode(new Node(BinaryNode(
-            BinaryNode::LESSER,
-            new Node(Variable("res")), 
-            new Node(Value(200.0)) 
-        )),&loopblock),
-
-
-	};
-    auto it = Interpreter();
-    Node programBlock = Block(program);
-    try {
-        Value idk = it.EvalNode(programBlock);
-    }
-    catch (LangError err) {
-        std::cerr << err.what() << '\n';
-    }
-    return 0;
-
-}
 void RPL() {
     while (true) {
         std::string source;
@@ -63,4 +22,38 @@ void RPL() {
             std::cout << TkStream[i].toString() << '\n';
         }
     }
+}
+void langTest() {
+    auto block2 = Block({
+        Assignment("b",new Node("SCREAM IF IT PRINTS")),
+        Assignment("as",new Node("b")),
+        Call("print",{Variable("as")}),
+        Call("print",{Variable("fg")})
+    });
+    auto block1 = Block({
+
+        Assignment("as",new Node("a")),
+        Call("print",{Variable("as")}),
+        block2,
+        Call("print",{Variable("as")}),
+        
+    });
+    auto programBlock = Block({
+        Assignment("fg",new Node("da")),
+        block1,
+        Call("print",{Variable("b")}),
+        
+    });
+    auto it = Interpreter();
+    try {
+        Value idk = it.EvalNode(programBlock);
+    }
+    catch (LangError err) {
+        std::cerr << err.what() << '\n';
+    }
+}
+int main(int argc, char* argv[]) {
+    langTest();
+    return 0;
+
 }

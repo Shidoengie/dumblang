@@ -140,7 +140,7 @@ Value Interpreter::EvalVariable(Variable var, std::vector<Scope>& scopes) {
 	auto currentScopes = std::views::reverse(scopes);
 	auto scopeHoldsVar = std::ranges::find_if(currentScopes, [&](Scope const& scope) {
 		return scope.contains(var.name);
-		});
+	});
 	if (scopeHoldsVar == currentScopes.end()) {
 		throw UndefinedVariableError(var.name);
 	}
@@ -155,11 +155,21 @@ void Interpreter::EvalBlock(Block block) {
 	for (auto const& statement : std::views::reverse(block.body)) {
 		statements.push(statement);
 	}
-	scopes.push_back(Scope{});
+	scopes.push_back(Scope{
+		{"Test",2.0},
+		{"PI",3.146210},
+		{"strToNum",BuiltinFunc(&StringToNum,1)},
+		{"print",BuiltinFunc(&PrintBuiltin,-1)},
+		{"input",BuiltinFunc(&InputBuiltin,1)}
+		});
 
 	while (!statements.empty()) {
 		Node statement = statements.top();
 		statements.pop();
+		if (std::holds_alternative<BlockEnd>(statement)) {
+			scopes.pop_back();
+		}
+
 		EvalNode(statement,scopes);
 	}
 };
@@ -319,5 +329,6 @@ Interpreter::Interpreter(Block base_) {
 	this->base = base_;
 }
 void Interpreter::execute() {
+
 	EvalBlock(this->base);
 }

@@ -20,25 +20,22 @@ Value PrintBuiltin(std::vector<Value> arguments);
 Value InputBuiltin(std::vector<Value> arguments);
 
 class Interpreter {
-public:
-	Value EvalNode(Node expr);
 private:
-	Scope current;
+	Value EvalNode(Node expr, std::vector<Scope>& scopes);
 	bool BoolConvert(double val);
-	
 	double numCalc(BinaryNode::Type opType, double leftValue, double rightValue);
 	Value strCalc(BinaryNode::Type opType, string leftValue, string rightValue);
 	Value CallBuiltinFunc(BuiltinFunc called, std::vector<Value> argValues);
-	Value EvalAssignment(Assignment ass);
-	Value EvalVariable(Variable var);
-	Value EvalBlock(std::vector<Node> block, Scope previous);
-	Value EvalUnaryNode(UnaryNode unaryOp);
-	Value EvalBinaryNode(BinaryNode binOp);
-	Value EvalCall(Call request);
-	Value EvalBranch(BranchNode branch);
-	Value EvalWhile(WhileNode loop);
+	Value EvalAssignment(Assignment ass, std::vector<Scope>& scopes);
+	Value EvalVariable(Variable var, std::vector<Scope>& scopes);
+	void EvalBlock(Block block);
+	void EvalWhile(WhileNode loop, std::vector<Scope>& scopes);
+	Value EvalUnaryNode(UnaryNode::Type type, Value obj);
+	Value EvalBinaryNode(BinaryNode::Type type, Value leftValue, Value rightValue);
+	Value EvalCall(Call request, std::vector<Scope>& scopes);
+	Value EvalBranch(BranchNode branch, std::vector<Scope>& scopes);
 public:
-	Interpreter(std::map<string, Value> base);
-	Interpreter(Scope base);
-	Interpreter();
+	Block base;
+	Interpreter(Block base_);
+	void execute();
 };

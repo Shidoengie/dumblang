@@ -21,12 +21,13 @@ struct BranchNode;
 struct WhileNode;
 struct Break {};
 struct NoneType {};
+struct BlockEnd {};
 using Value = std::variant < NoneType, double, std::string, Function, BuiltinFunc> ;
 
 using Node = std::variant <
 	Value, BinaryNode, UnaryNode,
 	Variable, Assignment, Call,
-	Block, BranchNode, Return,
+	Block,BlockEnd, BranchNode, Return,
 	WhileNode, Break
 >;
 struct BinaryNode {
@@ -100,11 +101,4 @@ struct WhileNode {
 	Node* condition;
 	Block* loopBlock;
 };
-struct Scope {
-	Scope* parentScope;
-	std::map<std::string, Value> varMap;
-	bool isAtend();
-	Value getVar(std::string varName);
-	bool containsVar(std::string varName);
-	void define(std::string varName, Value val);
-};
+using Scope = std::map<std::string, Value>;

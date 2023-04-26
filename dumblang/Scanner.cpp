@@ -58,7 +58,7 @@ void Scanner::str() {
 	do {
 		endStr += LastChar;
 		if (isAtEnd()) {
-			throw LangError("Undetermined string", LangError::LEXER);
+			throw UnspecifiedError("Undetermined string");
 		}
 		LastChar = advance();
 	} while (LastChar != '"');
@@ -129,7 +129,7 @@ void Scanner::getToken() {
 			identifier(LastChar);
 		}
 		else {
-			throw LangError("Unexpected char", LangError::LEXER);
+			throw UnspecifiedError("Unexpected char");
 		}
 		break;
 	}

@@ -14,7 +14,7 @@ void RPL() {
         try {
             TkStream = scan.scanTokens();
         }
-        catch (LangError& err) {
+        catch (std::exception& err) {
             std::cerr << err.what() << '\n';
         }
         for (size_t i = 0; i < TkStream.size(); i++)
@@ -41,14 +41,14 @@ void langTest() {
     auto programBlock = Block({
         Assignment("fg",new Node("da")),
         block1,
-        Call("print",{Variable("b")}),
+        
         
     });
-    auto it = Interpreter();
+    auto it = Interpreter(programBlock);
     try {
-        Value idk = it.EvalNode(programBlock);
+        it.execute();
     }
-    catch (LangError err) {
+    catch (LangError& err) {
         std::cerr << err.what() << '\n';
     }
 }

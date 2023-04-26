@@ -5,8 +5,6 @@ constexpr bool variantHas(const std::variant<Types...>& var) noexcept {
 	return std::holds_alternative<Ty>(var);
 }
 
-
-
 Value PrintBuiltin(std::vector<Value> arguments) {
 	for (auto const& argument : arguments) {
 		if (variantHas<string>(argument)) {
@@ -31,7 +29,7 @@ Value StringToNum(std::vector<Value> arguments) {
 			return std::stod(*val);
 		}
 		catch (std::invalid_argument) {
-			throw LangError("Invalid string format",LangError::AST);
+			throw InvalidStringFormatError(*val);
 		}
 	}
 	if (variantHas<double>(argument)) {
@@ -116,148 +114,161 @@ Value Interpreter::strCalc(BinaryNode::Type opType, string leftValue, string rig
 		return (double)(leftValue <= rightValue);
 		break;
 	default:
-		throw LangError("Invalid operator", LangError::AST);
+		throw InvalidOperatorError();
 	}
 }
 Value Interpreter::CallBuiltinFunc(BuiltinFunc called, std::vector<Value> argValues) {
 	if (called.argSize != -1 && argValues.size() != called.argSize) {
-		throw LangError("Incomplete arguments", LangError::AST);
+		throw InvalidArgumentsError(called.argSize, (int)argValues.size());
 	}
 	return called.funcPointer(argValues);
 }
-Value Interpreter::EvalAssignment(Assignment ass) {
-	Value controlType = EvalNode(*ass.value);
-	if (variantHas<NoneType>(controlType)) {
-		throw LangError("Cannot assign None to a variable",LangError::AST);
+Value Interpreter::EvalAssignment(Assignment ass, std::vector<Scope>& scopes) {
+	Scope& current_scope = scopes.back();
+	Value assignedValue;
+	try{
+		assignedValue = EvalNode(*ass.value,scopes);
 	}
-	current.define(ass.varName, controlType);
-	return controlType;
+	catch(ReturnException retval){
+		assignedValue = retval.what();
+	}
+	current_scope.insert({ ass.varName, assignedValue });
+	return assignedValue;
 }
 
-Value Interpreter::EvalVariable(Variable var) {
-	return current.getVar(var.name);
+Value Interpreter::EvalVariable(Variable var, std::vector<Scope>& scopes) {
+	auto currentScopes = std::views::reverse(scopes);
+	auto scopeHoldsVar = std::ranges::find_if(currentScopes, [&](Scope const& scope) {
+		return scope.contains(var.name);
+		});
+	if (scopeHoldsVar == currentScopes.end()) {
+		throw UndefinedVariableError(var.name);
+	}
+
+	Value varValue = scopeHoldsVar->at(var.name);
+	return varValue;
 }
 
-Value Interpreter::EvalBlock(std::vector<Node> block, Scope scopeBlock) {
-	scopeBlock.parentScope = &current;
-	if (block.size() == 0) {
-		return NoneType();
+void Interpreter::EvalBlock(Block block) {
+	std::stack<Node, std::vector<Node>> statements;
+	std::vector<Scope> scopes;
+	for (auto const& statement : std::views::reverse(block.body)) {
+		statements.push(statement);
 	}
-	for (auto& statement : block) {
-		current = *scopeBlock.parentScope;
-		Value val = EvalNode(statement);
+	scopes.push_back(Scope{});
+
+	while (!statements.empty()) {
+		Node statement = statements.top();
+		statements.pop();
+		EvalNode(statement,scopes);
 	}
-	return NoneType();
 };
 
-Value Interpreter::EvalUnaryNode(UnaryNode unaryOp) {
-	Value obj = EvalNode(*unaryOp.object);
-	switch (unaryOp.type)
+Value Interpreter::EvalUnaryNode(UnaryNode::Type type, Value obj) {
+	switch (type)
 	{
 	case UnaryNode::NEGATE:
 		if (auto val = std::get_if<double>(&obj)) {
 			return -(*val);
 		}
-		throw LangError("Invalid type", LangError::AST);
+		throw InvalidTypeError(obj, Value(0.0));
 	case UnaryNode::POSITIVE:
 		if (auto val = std::get_if<double>(&obj)) {
 			return +(*val);
 		}
-		throw LangError("Invalid type", LangError::AST);
+		throw InvalidTypeError(obj, Value(0.0));
 		break;
 	case UnaryNode::NOT:
 		if (auto val = std::get_if<double>(&obj)) {
 			bool out = BoolConvert(*val);
 			return (double)(!out);
 		}
-		throw LangError("Invalid type", LangError::AST);
+		throw InvalidTypeError(obj,Value(0.0));
 	default:
 		break;
 	}
 };
-Value Interpreter::EvalBinaryNode(BinaryNode binOp) {
-	Value leftValue = EvalNode(*binOp.left);
-	Value rightValue = EvalNode(*binOp.right);
+Value Interpreter::EvalBinaryNode(BinaryNode::Type type,Value leftValue, Value rightValue) {
 	if (leftValue.index() != rightValue.index()) {
 		
-		if (binOp.type == BinaryNode::ISEQUAL) {
+		if (type == BinaryNode::ISEQUAL) {
 			return 0.0;
 		}
-		if (binOp.type == BinaryNode::ISDIFERENT) {
+		if (type == BinaryNode::ISDIFERENT) {
 			return 1.0;
 		}
-		throw LangError("Mixed types", LangError::AST);
+		throw MixedTypesError({ Value(0.0),Value(0.0) }, { leftValue,rightValue });
 	}
 	if (variantHas<double>(leftValue)) {
-		return numCalc(binOp.type, std::get<double>(leftValue), std::get<double>(rightValue));
+		return numCalc(type, std::get<double>(leftValue), std::get<double>(rightValue));
 	}
 	if (variantHas<string>(leftValue)) {
-		return strCalc(binOp.type, std::get<string>(leftValue), std::get<string>(rightValue));
+		return strCalc(type, std::get<string>(leftValue), std::get<string>(rightValue));
 	}
 }
 
-Value Interpreter::EvalCall(Call request) {
-	Value getFunc = EvalNode(request.callee);
+Value Interpreter::EvalCall(Call request, std::vector<Scope>& scopes) {
+	Value getFunc = EvalNode(request.callee, scopes);
 	std::vector<Value> argValues;
 	for (size_t index = 0; index < request.args.size(); index++) {
-		argValues.push_back(EvalNode(request.args[index]));
+		argValues.push_back(EvalNode(request.args[index], scopes));
 	}
 	if (variantHas<BuiltinFunc>(getFunc)) {
 		return CallBuiltinFunc(std::get<BuiltinFunc>(getFunc), argValues);
 	}
 	if (!variantHas<Function>(getFunc)) {
-		throw LangError("Invalid Call", LangError::AST);
+		throw InvalidCallError(getFunc);
 	}
 	Function calledFunc = std::get<Function>(getFunc);
 	if (request.args.size() != calledFunc.args.size()) {
-		throw LangError("Incomplete arguments", LangError::AST);
+		throw InvalidArgumentsError((int)calledFunc.args.size(), (int)request.args.size());
 	}
 	for (size_t index = 0; index < calledFunc.args.size(); index++) {
-		string var = calledFunc.args[index];
+		string varName = calledFunc.args[index];
 		Value assignVal = argValues[index];
-		current.define(var, assignVal);
+		Scope& current_scope = scopes.back();
+		current_scope.insert({ varName, assignVal });
 	}
 	try{
-		EvalNode(EvalNode(calledFunc.block));
+		EvalNode(calledFunc.block, scopes);
 	}
 	catch (ReturnException value) {
 		return value.what();
 	}
 	return NoneType();
 }
-Value Interpreter::EvalBranch(BranchNode branch) {
-	Value conditionVal = EvalNode(*branch.condition);
+Value Interpreter::EvalBranch(BranchNode branch, std::vector<Scope>& scopes) {
+	Value conditionVal = EvalNode(*branch.condition, scopes);
 	if (!variantHas<double>(conditionVal)) {
-
-		throw LangError("Unexpected type Expected Number", LangError::AST);
+		throw InvalidTypeError(conditionVal,Value(0.0));
 	}
 	bool condition = BoolConvert(std::get<double>(conditionVal));
 	if (branch.ifBlock == nullptr) {
-		throw LangError("Invalid Branch", LangError::AST);
+		throw InvalidBranchFormatError();
 	}
 	if (condition) {
-		EvalNode(*branch.ifBlock);
+		EvalNode(*branch.ifBlock, scopes);
 		return NoneType();
 	}
 	else if (branch.elseBlock != nullptr) {
-		EvalNode(*branch.elseBlock);
+		EvalNode(*branch.elseBlock, scopes);
 		return NoneType();
 	}
 	return NoneType();
 }
-Value Interpreter::EvalWhile(WhileNode loop) {
+void Interpreter::EvalWhile(WhileNode loop, std::vector<Scope>& scopes) {
 	bool condition = true;
 	while (true) {
-		Value conditionVal = EvalNode(*loop.condition);
+		Value conditionVal = EvalNode(*loop.condition, scopes);
 		if (!variantHas<double>(conditionVal)) {
-			throw LangError("Unexpected type Expected Number", LangError::AST);
+			throw InvalidTypeError(conditionVal, Value(0.0));
 		}
 		condition = BoolConvert(std::get<double>(conditionVal));
 		if (!condition) {
 			break;
 		}
 		try {
-			EvalNode(*loop.loopBlock);
+			EvalNode(*loop.loopBlock, scopes);
 		}
 		catch (BreakException) {
 			break;
@@ -266,56 +277,47 @@ Value Interpreter::EvalWhile(WhileNode loop) {
 	}
 
 }
-Value Interpreter::EvalNode(Node expr) {
+Value Interpreter::EvalNode(Node expr, std::vector<Scope>& scopes) {
 	if (auto val = std::get_if<Value>(&expr)) {
 		return *val;
 	}
 	if (auto block = std::get_if<Block>(&expr)) {
-		return EvalBlock(block->body,Scope());
+		EvalBlock(*block);
 	}
 	if (auto var = std::get_if<Variable>(&expr)) {
-		return EvalVariable(*var);
+		return EvalVariable(*var,scopes);
 	}
 	if (auto request = std::get_if<Call>(&expr)) {
-		return EvalCall(*request);
+		return EvalCall(*request, scopes);
 	}
 	if (auto unaryOp = std::get_if<UnaryNode>(&expr)) {
-		return EvalUnaryNode(*unaryOp);
+		Value obj = EvalNode(*unaryOp->object,scopes);
+		return EvalUnaryNode(unaryOp->type,obj);
 	}
 	if (auto binOp = std::get_if<BinaryNode>(&expr)) {
-		return EvalBinaryNode(*binOp);
+		Value leftValue = EvalNode(*binOp->left,scopes);
+		Value rightValue = EvalNode(*binOp->right,scopes);
+		return EvalBinaryNode(binOp->type,leftValue,rightValue);
 	}
 	if (auto branch = std::get_if<BranchNode>(&expr)) {
-		return EvalBranch(*branch);
+		return EvalBranch(*branch, scopes);
 	}
 	if (auto ass = std::get_if<Assignment>(&expr)) {
-		return EvalAssignment(*ass);
+		return EvalAssignment(*ass, scopes);
 	}
 	if (auto ret = std::get_if<Return>(&expr)) {
-		throw ReturnException(EvalNode(*ret->object));
+		throw ReturnException(EvalNode(*ret->object, scopes));
 	}
 	if (auto loop = std::get_if<WhileNode>(&expr)) {
-		EvalWhile(*loop);
+		EvalWhile(*loop, scopes);
 	}
 	if (auto brk = std::get_if<Break>(&expr)) {
 		throw BreakException();
 	}
-	
 };
-
-Interpreter::Interpreter(std::map<string, Value> base) {
-	current = Scope(nullptr, base);
+Interpreter::Interpreter(Block base_) {
+	this->base = base_;
 }
-Interpreter::Interpreter(Scope base) {
-	current = base;
-}
-Interpreter::Interpreter() {
-	std::map<string, Value> defMap = {
-		{"Test",2.0},
-		{"PI",3.146210},
-		{"strToNum",BuiltinFunc(&StringToNum,1)},
-		{"print",BuiltinFunc(&PrintBuiltin,-1)},
-		{"input",BuiltinFunc(&InputBuiltin,1)}
-	};
-	current = Scope(nullptr, defMap);
+void Interpreter::execute() {
+	EvalBlock(this->base);
 }

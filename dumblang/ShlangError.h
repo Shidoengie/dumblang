@@ -22,7 +22,26 @@ public:
 		this->errorMsg = errorMsg_;
 	}
 };
+class LexerError : public LangError {
+
+};
+class UndeterminedStringError : public LexerError {
+public:
+	virtual const char* what() const noexcept override {
+		return "Undetermined string";
+	};
+};
+class UnexpectedCharError : public LangError {
+public:
+	UnexpectedCharError(char8_t specifiedChar) {
+		msg = "Unexpeted char, char:"+specifiedChar;
+	}
+	virtual const char* what() const noexcept override {
+		return msg.c_str();
+	};
+};
 class InterpreterError : public LangError {
+	
 };
 class UndefinedVariableError : public InterpreterError {
 

@@ -58,7 +58,7 @@ void Scanner::str() {
 	do {
 		endStr += LastChar;
 		if (isAtEnd()) {
-			throw UnspecifiedError("Undetermined string");
+			throw UndeterminedStringError();
 		}
 		LastChar = advance();
 	} while (LastChar != '"');
@@ -129,7 +129,7 @@ void Scanner::getToken() {
 			identifier(LastChar);
 		}
 		else {
-			throw UnspecifiedError("Unexpected char");
+			throw UnexpectedCharError(LastChar);
 		}
 		break;
 	}

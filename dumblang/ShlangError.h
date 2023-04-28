@@ -9,7 +9,7 @@ class LangError : public std::exception {
 
 public:
 	std::string msg;
-	int line;
+	int line = 0;
 };
 class UnspecifiedError : public LangError {
 public:

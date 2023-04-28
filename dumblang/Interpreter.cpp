@@ -115,6 +115,7 @@ Value Interpreter::strCalc(BinaryNode::Type opType, string leftValue, string rig
 		return (double)(leftValue <= rightValue);
 		break;
 	default:
+		break;
 	}
 }
 Value Interpreter::CallBuiltinFunc(BuiltinFunc called, std::vector<Value> argValues) {
@@ -123,30 +124,50 @@ Value Interpreter::CallBuiltinFunc(BuiltinFunc called, std::vector<Value> argVal
 	}
 	return called.funcPointer(argValues);
 }
-Value Interpreter::EvalAssignment(Assignment ass) {
-	Value controlType = EvalNode(*ass.value);
-	if (variantHas<NoneType>(controlType)) {
+void Interpreter::EvalAssignment(Assignment ass) {
+	Value assVal; 
+	try {
+		assVal = EvalNode(*ass.value);
+	}
+	catch(ReturnException retValue){
+		assVal = retValue.what();
+	}
+	if (variantHas<NoneType>(assVal)) {
 		throw UnspecifiedError("Cannot assign None to a variable");
 	}
-	current.define(ass.varName, controlType);
-	return controlType;
+	current.define(ass.varName, assVal);
+	
 }
+
+void Interpreter::EvalBlock(Block block) {
+	auto newScope = Scope(&current,{ });
+	current = newScope;
+	if (block.body.size() == 0) {
+		return;
+	}
+	std::vector<Node> body = block.body;
+	for (Node& statement : body) {
+		if (auto block = std::get_if<Block>(&statement)) {
+			EvalBlock(*block);
+			continue;
+		}
+		else {
+			EvalNode(statement);
+		}
+		
+		
+	}
+	current = *newScope.parentScope;
+};
 
 Value Interpreter::EvalVariable(Variable var) {
-	return current.getVar(var.name);
-}
 
-Value Interpreter::EvalBlock(std::vector<Node> block, Scope scopeBlock) {
-	scopeBlock.parentScope = &current;
-	if (block.size() == 0) {
-		return NoneType();
+	Value varValue = current.getVar(var.name);
+	if (variantHas<NoneType>(varValue)) {
+		throw UndefinedVariableError(var.name);
 	}
-	for (auto& statement : block) {
-		current = *scopeBlock.parentScope;
-		Value val = EvalNode(statement);
-	}
-	return NoneType();
-};
+	
+}
 
 Value Interpreter::EvalUnaryNode(UnaryNode unaryOp) {
 	Value obj = EvalNode(*unaryOp.object);
@@ -260,52 +281,58 @@ Value Interpreter::EvalWhile(WhileNode loop) {
 		}
 
 	}
+	return NoneType();
 
 }
 Value Interpreter::EvalNode(Node expr) {
 	if (auto val = std::get_if<Value>(&expr)) {
 		return *val;
 	}
-	if (auto block = std::get_if<Block>(&expr)) {
-		return EvalBlock(block->body, Scope());
+	else if (auto block = std::get_if<Block>(&expr)) {
+		EvalBlock(*block);
+		return NoneType();
 	}
-	if (auto var = std::get_if<Variable>(&expr)) {
+	else if (auto var = std::get_if<Variable>(&expr)) {
 		return EvalVariable(*var);
 	}
-	if (auto request = std::get_if<Call>(&expr)) {
+	else if (auto request = std::get_if<Call>(&expr)) {
 		return EvalCall(*request);
 	}
-	if (auto unaryOp = std::get_if<UnaryNode>(&expr)) {
+	else if (auto unaryOp = std::get_if<UnaryNode>(&expr)) {
 		return EvalUnaryNode(*unaryOp);
 	}
-	if (auto binOp = std::get_if<BinaryNode>(&expr)) {
+	else if (auto binOp = std::get_if<BinaryNode>(&expr)) {
 		return EvalBinaryNode(*binOp);
 	}
-	if (auto branch = std::get_if<BranchNode>(&expr)) {
+	else if (auto branch = std::get_if<BranchNode>(&expr)) {
 		return EvalBranch(*branch);
 	}
-	if (auto ass = std::get_if<Assignment>(&expr)) {
-		return EvalAssignment(*ass);
+	
+	else if (auto ass = std::get_if<Assignment>(&expr)) {
+		EvalAssignment(*ass);
+		return NoneType();
 	}
-	if (auto ret = std::get_if<Return>(&expr)) {
+	else if (auto ret = std::get_if<Return>(&expr)) {
 		throw ReturnException(EvalNode(*ret->object));
 	}
-	if (auto loop = std::get_if<WhileNode>(&expr)) {
+	else if (auto loop = std::get_if<WhileNode>(&expr)) {
 		EvalWhile(*loop);
 	}
-	if (auto brk = std::get_if<Break>(&expr)) {
+	else if (auto brk = std::get_if<Break>(&expr)) {
 		throw BreakException();
 	}
 
 };
 
-Interpreter::Interpreter(std::map<string, Value> base) {
+Interpreter::Interpreter(Block program, std::map<string, Value> base) {
 	current = Scope(nullptr, base);
+	program_ = program;
 }
-Interpreter::Interpreter(Scope base) {
+Interpreter::Interpreter(Block program, Scope base) {
 	current = base;
+	program_ = program;
 }
-Interpreter::Interpreter() {
+Interpreter::Interpreter(Block program) {
 	std::map<string, Value> defMap = {
 		{"Test",2.0},
 		{"PI",3.146210},
@@ -314,4 +341,8 @@ Interpreter::Interpreter() {
 		{"input",BuiltinFunc(&InputBuiltin,1)}
 	};
 	current = Scope(nullptr, defMap);
+	program_ = program;
+}
+void Interpreter::execute() {
+	EvalBlock(program_);
 }

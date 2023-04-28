@@ -24,13 +24,13 @@ void RPL() {
     }
 }
 void langTest() {
-    auto block2 = Block({
+    Block block2 = Block({
         Assignment("b",new Node("SCREAM IF IT PRINTS")),
         Assignment("as",new Node("b")),
         Call("print",{Variable("as")}),
         Call("print",{Variable("fg")})
     });
-    auto block1 = Block({
+    Block block1 = Block({
 
         Assignment("as",new Node("a")),
         Call("print",{Variable("as")}),
@@ -38,7 +38,7 @@ void langTest() {
         Call("print",{Variable("as")}),
         
     });
-    auto programBlock = Block({
+    Block programBlock = Block({
         Assignment("fg",new Node("da")),
         block1,
         

@@ -119,14 +119,14 @@ Value Interpreter::strCalc(BinaryNode::Type opType, string leftValue, string rig
 }
 Value Interpreter::CallBuiltinFunc(BuiltinFunc called, std::vector<Value> argValues) {
 	if (called.argSize != -1 && argValues.size() != called.argSize) {
-		throw LangError("Incomplete arguments", LangError::AST);
+		throw InvalidArgumentsError(argValues.size(), called.argSize);
 	}
 	return called.funcPointer(argValues);
 }
 Value Interpreter::EvalAssignment(Assignment ass) {
 	Value controlType = EvalNode(*ass.value);
 	if (variantHas<NoneType>(controlType)) {
-		throw LangError("Cannot assign None to a variable", LangError::AST);
+		throw UnspecifiedError("Cannot assign None to a variable");
 	}
 	current.define(ass.varName, controlType);
 	return controlType;
@@ -156,16 +156,19 @@ Value Interpreter::EvalUnaryNode(UnaryNode unaryOp) {
 		if (auto val = std::get_if<double>(&obj)) {
 			return -(*val);
 		}
+		throw InvalidTypeError(obj,Value(0.0));
 	case UnaryNode::POSITIVE:
 		if (auto val = std::get_if<double>(&obj)) {
 			return +(*val);
 		}
+		throw InvalidTypeError(obj, Value(0.0));
 		break;
 	case UnaryNode::NOT:
 		if (auto val = std::get_if<double>(&obj)) {
 			bool out = BoolConvert(*val);
 			return (double)(!out);
 		}
+		throw InvalidTypeError(obj, Value(0.0));
 	default:
 		break;
 	}
@@ -181,7 +184,7 @@ Value Interpreter::EvalBinaryNode(BinaryNode binOp) {
 		if (binOp.type == BinaryNode::ISDIFERENT) {
 			return 1.0;
 		}
-		throw LangError("Mixed types", LangError::AST);
+		throw MixedTypesError({leftValue,rightValue},{Value(0.0),Value(0.0)});
 	}
 	if (variantHas<double>(leftValue)) {
 		return numCalc(binOp.type, std::get<double>(leftValue), std::get<double>(rightValue));
@@ -201,9 +204,11 @@ Value Interpreter::EvalCall(Call request) {
 		return CallBuiltinFunc(std::get<BuiltinFunc>(getFunc), argValues);
 	}
 	if (!variantHas<Function>(getFunc)) {
+		throw InvalidCallError(getFunc);
 	}
 	Function calledFunc = std::get<Function>(getFunc);
 	if (request.args.size() != calledFunc.args.size()) {
+		throw InvalidArgumentsError(request.args.size(), calledFunc.args.size());
 	}
 	for (size_t index = 0; index < calledFunc.args.size(); index++) {
 		string var = calledFunc.args[index];
@@ -222,7 +227,7 @@ Value Interpreter::EvalBranch(BranchNode branch) {
 	Value conditionVal = EvalNode(*branch.condition);
 	if (!variantHas<double>(conditionVal)) {
 
-		throw LangError("Unexpected type Expected Number", LangError::AST);
+		throw InvalidTypeError(conditionVal, Value(0.0));
 	}
 	bool condition = BoolConvert(std::get<double>(conditionVal));
 	if (branch.ifBlock == nullptr) {

@@ -101,4 +101,11 @@ struct WhileNode {
 	Node* condition;
 	Block* loopBlock;
 };
-using Scope = std::map<std::string, Value>;
+struct Scope {
+	Scope* parentScope;
+	std::map<std::string, Value> varMap;
+	bool isAtend();
+	Value getVar(std::string varName);
+	bool containsVar(std::string varName);
+	void define(std::string varName, Value val);
+};

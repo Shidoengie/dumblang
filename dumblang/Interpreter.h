@@ -28,7 +28,7 @@ private:
 	Value CallBuiltinFunc(BuiltinFunc called, std::vector<Value> argValues);
 	Value EvalAssignment(Assignment ass, std::vector<Scope>& scopes);
 	Value EvalVariable(Variable var, std::vector<Scope>& scopes);
-	void EvalBlock(Block block);
+	
 	void EvalWhile(WhileNode loop, std::vector<Scope>& scopes);
 	Value EvalUnaryNode(UnaryNode::Type type, Value obj);
 	Value EvalBinaryNode(BinaryNode::Type type, Value leftValue, Value rightValue);

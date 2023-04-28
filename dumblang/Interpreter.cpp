@@ -5,6 +5,8 @@ constexpr bool variantHas(const std::variant<Types...>& var) noexcept {
 	return std::holds_alternative<Ty>(var);
 }
 
+std::stack<Scope> scopeStack;
+
 Value PrintBuiltin(std::vector<Value> arguments) {
 	for (auto const& argument : arguments) {
 		if (variantHas<string>(argument)) {
@@ -125,54 +127,26 @@ Value Interpreter::CallBuiltinFunc(BuiltinFunc called, std::vector<Value> argVal
 }
 Value Interpreter::EvalAssignment(Assignment ass, std::vector<Scope>& scopes) {
 	Scope& current_scope = scopes.back();
-	Value assignedValue;
-	try{
-		assignedValue = EvalNode(*ass.value,scopes);
-	}
-	catch(ReturnException retval){
-		assignedValue = retval.what();
-	}
+	Value assignedValue = EvalNode(*ass.value, scopes);
+	
 	current_scope.insert({ ass.varName, assignedValue });
 	return assignedValue;
 }
 
-Value Interpreter::EvalVariable(Variable var, std::vector<Scope>& scopes) {
-	auto currentScopes = std::views::reverse(scopes);
-	auto scopeHoldsVar = std::ranges::find_if(currentScopes, [&](Scope const& scope) {
-		return scope.contains(var.name);
-	});
-	if (scopeHoldsVar == currentScopes.end()) {
-		throw UndefinedVariableError(var.name);
+Value Interpreter::EvalVariable(Variable var) {
+	std::stack<Scope> currentStack = scopeStack;
+	while (!currentStack.empty())
+	{
+		Scope currentScope = currentStack.top();
+		if (currentScope.contains(var.name)) {
+			return currentScope[var.name];
+		}
+		currentStack.pop();
 	}
-
-	Value varValue = scopeHoldsVar->at(var.name);
-	return varValue;
+	throw UndefinedVariableError(var.name);
 }
 
-void Interpreter::EvalBlock(Block block) {
-	std::stack<Node, std::vector<Node>> statements;
-	std::vector<Scope> scopes;
-	for (auto const& statement : std::views::reverse(block.body)) {
-		statements.push(statement);
-	}
-	scopes.push_back(Scope{
-		{"Test",2.0},
-		{"PI",3.146210},
-		{"strToNum",BuiltinFunc(&StringToNum,1)},
-		{"print",BuiltinFunc(&PrintBuiltin,-1)},
-		{"input",BuiltinFunc(&InputBuiltin,1)}
-		});
 
-	while (!statements.empty()) {
-		Node statement = statements.top();
-		statements.pop();
-		if (std::holds_alternative<BlockEnd>(statement)) {
-			scopes.pop_back();
-		}
-
-		EvalNode(statement,scopes);
-	}
-};
 
 Value Interpreter::EvalUnaryNode(UnaryNode::Type type, Value obj) {
 	switch (type)
@@ -191,6 +165,7 @@ Value Interpreter::EvalUnaryNode(UnaryNode::Type type, Value obj) {
 	case UnaryNode::NOT:
 		if (auto val = std::get_if<double>(&obj)) {
 			bool out = BoolConvert(*val);
+			delete val;
 			return (double)(!out);
 		}
 		throw InvalidTypeError(obj,Value(0.0));
@@ -215,6 +190,7 @@ Value Interpreter::EvalBinaryNode(BinaryNode::Type type,Value leftValue, Value r
 	if (variantHas<string>(leftValue)) {
 		return strCalc(type, std::get<string>(leftValue), std::get<string>(rightValue));
 	}
+	
 }
 
 Value Interpreter::EvalCall(Call request, std::vector<Scope>& scopes) {
@@ -256,15 +232,12 @@ Value Interpreter::EvalBranch(BranchNode branch, std::vector<Scope>& scopes) {
 	if (branch.ifBlock == nullptr) {
 		throw InvalidBranchFormatError();
 	}
-	if (condition) {
+	else if (condition) {
 		EvalNode(*branch.ifBlock, scopes);
-		return NoneType();
 	}
-	else if (branch.elseBlock != nullptr) {
-		EvalNode(*branch.elseBlock, scopes);
-		return NoneType();
+	else if(branch.elseBlock != nullptr) {
+		EvalNode(*branch.elseBlock, scopes);	
 	}
-	return NoneType();
 }
 void Interpreter::EvalWhile(WhileNode loop, std::vector<Scope>& scopes) {
 	bool condition = true;
@@ -291,8 +264,8 @@ Value Interpreter::EvalNode(Node expr, std::vector<Scope>& scopes) {
 	if (auto val = std::get_if<Value>(&expr)) {
 		return *val;
 	}
-	if (auto block = std::get_if<Block>(&expr)) {
-		EvalBlock(*block);
+	if (variantHas<BlockEnd>(expr)) {
+		scopeStack.pop();
 	}
 	if (auto var = std::get_if<Variable>(&expr)) {
 		return EvalVariable(*var,scopes);
@@ -326,9 +299,37 @@ Value Interpreter::EvalNode(Node expr, std::vector<Scope>& scopes) {
 	}
 };
 Interpreter::Interpreter(Block base_) {
-	this->base = base_;
+	base = base_;
 }
 void Interpreter::execute() {
+	std::stack<Node, std::vector<Node>> statements;
+	std::vector<Scope> scopes;
+	for (auto const& statement : std::views::reverse(base.body)) {
+		statements.push(statement);
+	}
+	scopes.push_back(Scope{
+		{"Test",2.0},
+		{"PI",3.146210},
+		{"strToNum",BuiltinFunc(&StringToNum,1)},
+		{"print",BuiltinFunc(&PrintBuiltin,-1)},
+		{"input",BuiltinFunc(&InputBuiltin,1)}
+		});
 
-	EvalBlock(this->base);
-}
+	while (!statements.empty()) {
+		Node statement = statements.top();
+
+		statements.pop();
+		if (auto block = std::get_if<Block>(&statement)) {
+			statements.push(BlockEnd{});
+			for (auto const& statement : std::views::reverse(base.body)) {
+				statements.push(statement);
+			}
+			scopes.push_back(Scope{});
+		}
+		else if (std::holds_alternative<BlockEnd>(statement)) {
+			scopes.pop_back();
+		}
+		EvalNode(statement, scopes);
+		
+	}
+};

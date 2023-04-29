@@ -25,23 +25,21 @@ void RPL() {
 }
 void langTest() {
     Block block2 = Block({
-        Assignment("b",new Node("SCREAM IF IT PRINTS")),
-        Assignment("as",new Node("b")),
-        Call("print",{Variable("as")}),
-        Call("print",{Variable("fg")})
+        Assignment("fail",new Node("SCREAM IF IT PRINTS")),
+        Assignment("var",new Node("1")),
+        Call("print",{Variable("var")}),
     });
     Block block1 = Block({
-
-        Assignment("as",new Node("a")),
-        Call("print",{Variable("as")}),
+        Assignment("var",new Node("2")),
+        Call("print",{Variable("var")}),
         block2,
-        Call("print",{Variable("as")}),
+        Call("print",{Variable("var")}),
         
     });
     Block programBlock = Block({
-        Assignment("fg",new Node("da")),
-        block1,
         
+        block1,
+        Call("print",{Variable("fail")})
         
     });
     auto it = Interpreter(programBlock);

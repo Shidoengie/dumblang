@@ -15,12 +15,15 @@ bool Scope::isAtend() {
 }
 Value Scope::getVar(std::string varName) {
     auto current = this;
-
-    while (current != nullptr) {
-
+    
+    while (true) {
+        
         if (current->varMap.contains(varName)) {
 
             return current->varMap[varName];
+        }
+        if (current->parentScope == nullptr) {
+            break;
         }
         current = current->parentScope;
     }
@@ -31,6 +34,5 @@ bool Scope::containsVar(std::string varName) {
     return varMap.contains(varName);
 }
 void Scope::define(std::string varName, Value val) {
-    auto current = this;
-    current->varMap.insert_or_assign(varName, val);
+    varMap.insert_or_assign(varName, val);
 }

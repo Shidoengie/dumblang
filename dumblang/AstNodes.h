@@ -108,4 +108,5 @@ struct Scope {
 	Value getVar(std::string varName);
 	bool containsVar(std::string varName);
 	void define(std::string varName, Value val);
+	Scope create_copy() { return *this; }
 };

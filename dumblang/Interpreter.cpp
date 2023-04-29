@@ -140,22 +140,18 @@ void Interpreter::EvalAssignment(Assignment ass) {
 }
 
 void Interpreter::EvalBlock(Block block) {
-	auto newScope = Scope(&current,{ });
+	Scope currentCopy = current;
+	auto newScope = Scope(&currentCopy,{ });
 	current = newScope;
 	if (block.body.size() == 0) {
 		return;
 	}
 	std::vector<Node> body = block.body;
-	for (Node& statement : body) {
-		if (auto block = std::get_if<Block>(&statement)) {
-			EvalBlock(*block);
-			continue;
-		}
-		else {
-			EvalNode(statement);
-		}
-		
-		
+	for (size_t i = 0; i < body.size(); i++)
+	{
+		Node statement = body[i];
+		EvalNode(statement);
+
 	}
 	current = *newScope.parentScope;
 };
@@ -216,9 +212,14 @@ Value Interpreter::EvalBinaryNode(BinaryNode binOp) {
 }
 
 Value Interpreter::EvalCall(Call request) {
-	Value getFunc = EvalNode(request.callee);
+	Value getFunc = current.getVar(request.callee.name);
 	std::vector<Value> argValues;
 	for (size_t index = 0; index < request.args.size(); index++) {
+		Node argument = request.args[index];
+		if (auto var = std::get_if<Variable>(&argument)) {
+			argValues.push_back(current.getVar(var->name));
+			continue;
+		}
 		argValues.push_back(EvalNode(request.args[index]));
 	}
 	if (variantHas<BuiltinFunc>(getFunc)) {
@@ -237,7 +238,7 @@ Value Interpreter::EvalCall(Call request) {
 		current.define(var, assignVal);
 	}
 	try {
-		EvalNode(EvalNode(calledFunc.block));
+		EvalNode(calledFunc.block);
 	}
 	catch (ReturnException value) {
 		return value.what();
@@ -289,11 +290,13 @@ Value Interpreter::EvalNode(Node expr) {
 		return *val;
 	}
 	else if (auto block = std::get_if<Block>(&expr)) {
+		
 		EvalBlock(*block);
 		return NoneType();
 	}
 	else if (auto var = std::get_if<Variable>(&expr)) {
-		return EvalVariable(*var);
+		Value varVal = EvalVariable(*var);
+		return varVal;
 	}
 	else if (auto request = std::get_if<Call>(&expr)) {
 		return EvalCall(*request);
@@ -340,7 +343,10 @@ Interpreter::Interpreter(Block program) {
 		{"print",BuiltinFunc(&PrintBuiltin,-1)},
 		{"input",BuiltinFunc(&InputBuiltin,1)}
 	};
-	current = Scope(nullptr, defMap);
+	Scope* baseScope = new Scope();
+	baseScope->parentScope = nullptr;
+	baseScope->varMap = defMap;
+	current = *baseScope;
 	program_ = program;
 }
 void Interpreter::execute() {

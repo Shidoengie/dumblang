@@ -129,8 +129,9 @@ void Interpreter::EvalAssignment(Assignment ass) {
 	try {
 		assVal = EvalNode(*ass.value);
 	}
-	catch(ReturnException retValue){
-		assVal = retValue.what();
+	catch(ReturnException& retExcept) {
+		Value retValue = retExcept.get();
+		assVal = retValue;
 	}
 	if (variantHas<NoneType>(assVal)) {
 		throw UnspecifiedError("Cannot assign None to a variable");
@@ -140,6 +141,7 @@ void Interpreter::EvalAssignment(Assignment ass) {
 }
 
 void Interpreter::EvalBlock(Block block) {
+	
 	Scope currentCopy = current;
 	auto newScope = Scope(&currentCopy,{ });
 	current = newScope;
@@ -241,7 +243,7 @@ Value Interpreter::EvalCall(Call request) {
 		EvalNode(calledFunc.block);
 	}
 	catch (ReturnException value) {
-		return value.what();
+		return value.get();
 	}
 	return NoneType();
 }
@@ -253,8 +255,9 @@ Value Interpreter::EvalBranch(BranchNode branch) {
 	}
 	bool condition = BoolConvert(std::get<double>(conditionVal));
 	if (branch.ifBlock == nullptr) {
+		throw InvalidBranchFormatError();
 	}
-	if (condition) {
+	else if (condition) {
 		EvalNode(*branch.ifBlock);
 		return NoneType();
 	}
@@ -316,10 +319,13 @@ Value Interpreter::EvalNode(Node expr) {
 		return NoneType();
 	}
 	else if (auto ret = std::get_if<Return>(&expr)) {
-		throw ReturnException(EvalNode(*ret->object));
+		Node returnVal = *ret->object;
+		Value result = EvalNode(returnVal);
+		throw ReturnException(result);
 	}
 	else if (auto loop = std::get_if<WhileNode>(&expr)) {
 		EvalWhile(*loop);
+		return NoneType();
 	}
 	else if (auto brk = std::get_if<Break>(&expr)) {
 		throw BreakException();

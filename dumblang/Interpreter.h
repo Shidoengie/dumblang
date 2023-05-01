@@ -3,16 +3,16 @@
 #include "ShlangError.h"
 using std::cout;
 using std::string;
-class ReturnException : public std::exception
+class ReturnException
 {
 private:
-	Value val_;
+	Value val_ = 0.0;
 public:
-	virtual const Value what() {
-		return val_;
-	}
 	ReturnException(Value val) {
-		val_ = val;
+		this->val_ = val;
+	}
+	virtual const Value get() {
+		return val_;
 	}
 };
 class BreakException : public std::exception { };

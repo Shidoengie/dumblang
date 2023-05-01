@@ -20,7 +20,7 @@ struct Return;
 struct BranchNode;
 struct WhileNode;
 struct Break {};
-struct NoneType {};
+struct NoneType;
 struct BlockEnd {};
 using Value = std::variant < NoneType, double, std::string, Function, BuiltinFunc> ;
 
@@ -30,6 +30,8 @@ using Node = std::variant <
 	Block,BlockEnd, BranchNode, Return,
 	WhileNode, Break
 >;
+std::string ValueToString(Value val);
+
 struct BinaryNode {
 	enum Type{
 		ADD,
@@ -72,6 +74,9 @@ struct Block {
 struct Return {
 	Node* object;
 };
+struct NoneType {
+
+};
 struct Call {
 	Variable callee;
 	std::vector<Node> args;
@@ -109,4 +114,6 @@ struct Scope {
 	bool containsVar(std::string varName);
 	void define(std::string varName, Value val);
 	Scope create_copy() { return *this; }
+	std::string to_string();
+	std::string structure();
 };

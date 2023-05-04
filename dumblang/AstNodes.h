@@ -22,13 +22,14 @@ struct WhileNode;
 struct Break {};
 struct NoneType;
 struct BlockEnd {};
-using Value = std::variant < NoneType, double, std::string, Function, BuiltinFunc> ;
+using Control = std::variant< Return, Break >;
+using Value = std::variant < NoneType, double, std::string, Function, BuiltinFunc,Control> ;
 
 using Node = std::variant <
 	Value, BinaryNode, UnaryNode,
 	Variable, Assignment, Call,
-	Block,BlockEnd, BranchNode, Return,
-	WhileNode, Break
+	Block,BlockEnd, BranchNode,
+	WhileNode,
 >;
 std::string ValueToString(Value val);
 
@@ -72,7 +73,7 @@ struct Block {
 	std::vector<Node> body;
 };
 struct Return {
-	Node* object;
+	Value* object;
 };
 struct NoneType {
 

@@ -105,7 +105,7 @@ class InvalidTypeError : public InterpreterError {
 public:
 	Value specifiedType;
 	Value exceptedType;
-	const std::vector<std::string> typeMap = {"None","double","string","Function","FunctionCall","BuiltinFunc"};
+	const std::vector<std::string> typeMap = {"None","double","string","Function","FunctionCall","BuiltinFunc","Control" };
 	virtual const char* what() const noexcept override {
 		return msg.c_str();
 	};
@@ -121,7 +121,7 @@ public:
 	std::vector<Value> specifiedType;
 	std::vector<Value> exceptedType;
 	
-	std::vector<std::string> typeMap = { "None","double","string","Function","FunctionCall","BuiltinFunc"};
+	std::vector<std::string> typeMap = { "None","double","string","Function","FunctionCall","BuiltinFunc","Control" };
 	virtual const char* what() const noexcept override {
 		
 		return msg.c_str();
@@ -136,7 +136,7 @@ public:
 class InvalidCallError : public InterpreterError {
 public:
 	Value specifiedType;
-	std::vector<std::string> typeMap = { "None","double","string","Function","FunctionCall","BuiltinFunc"};
+	std::vector<std::string> typeMap = { "None","double","string","Function","FunctionCall","BuiltinFunc","Control"};
 	virtual const char* what() const noexcept override {
 		
 		return msg.c_str();

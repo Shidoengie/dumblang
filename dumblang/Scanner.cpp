@@ -15,7 +15,10 @@ Scanner::Scanner(std::string _source)
 }
 
 char8_t Scanner::advance() {
-	return source[current++];
+	
+	char8_t last = source[current];
+	current++;
+	return last;
 }
 
 bool Scanner::isAtEnd() {

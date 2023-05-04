@@ -1,5 +1,5 @@
 #include "Interpreter.h"
-
+#include "ShlangError.h"
 template<class Ty, class... Types>
 constexpr bool variantHas(const std::variant<Types...>& var) noexcept {
 	return std::holds_alternative<Ty>(var);
@@ -125,35 +125,43 @@ Value Interpreter::CallBuiltinFunc(BuiltinFunc called, std::vector<Value> argVal
 	return called.funcPointer(argValues);
 }
 void Interpreter::EvalAssignment(Assignment ass) {
-	Value assVal; 
-	try {
-		assVal = EvalNode(*ass.value);
-	}
-	catch(ReturnException& retExcept) {
-		Value retValue = retExcept.get();
-		assVal = retValue;
-	}
+	Value assVal = EvalNode(*ass.value);
 	if (variantHas<NoneType>(assVal)) {
 		throw UnspecifiedError("Cannot assign None to a variable");
 	}
-	current.define(ass.varName, assVal);
 	
+	if (!variantHas<Control>(assVal)) {
+		current.define(ass.varName, assVal);
+		return;
+	}
+	auto flow = std::get<Control>(assVal);
+	if (auto ret = std::get_if<Return>(&flow)) {
+		if (variantHas<NoneType>(*ret->object)) {
+			throw UnspecifiedError("Cannot assign None to a variable");
+		}
+		current.define(ass.varName, *ret->object);
+		return;
+	}
 }
 
-void Interpreter::EvalBlock(Block block) {
+Value Interpreter::EvalBlock(Block block) {
 	
 	Scope currentCopy = current;
 	auto newScope = Scope(&currentCopy,{ });
 	current = newScope;
+	current.to_string();
 	if (block.body.size() == 0) {
 		return;
 	}
 	std::vector<Node> body = block.body;
 	for (size_t i = 0; i < body.size(); i++)
 	{
-		Node statement = body[i];
-		EvalNode(statement);
 
+		Node statement = body[i];
+		Value result = EvalNode(statement);
+		if (auto control = std::get_if<Control>(&result)) {
+			return *control;
+		}
 	}
 	current = *newScope.parentScope;
 };
@@ -234,18 +242,22 @@ Value Interpreter::EvalCall(Call request) {
 	if (request.args.size() != calledFunc.args.size()) {
 		throw InvalidArgumentsError(request.args.size(), calledFunc.args.size());
 	}
+	std::vector<Node> argAssignements;
 	for (size_t index = 0; index < calledFunc.args.size(); index++) {
 		string var = calledFunc.args[index];
 		Value assignVal = argValues[index];
-		current.define(var, assignVal);
+		argAssignements.push_back(Assignment(var, new Node(assignVal)));
 	}
-	try {
-		EvalNode(calledFunc.block);
+	argAssignements.append_range(calledFunc.block.body);
+	calledFunc.block.body = argAssignements;
+	Value result = EvalNode(calledFunc.block);
+	if (!variantHas<Control>(result)) {
+		return NoneType();
 	}
-	catch (ReturnException value) {
-		return value.get();
+	auto flow = std::get<Control>(result);
+	if (auto ret = std::get_if<Return>(&flow)) {
+		return *ret->object;
 	}
-	return NoneType();
 }
 Value Interpreter::EvalBranch(BranchNode branch) {
 	Value conditionVal = EvalNode(*branch.condition);
@@ -277,10 +289,15 @@ Value Interpreter::EvalWhile(WhileNode loop) {
 		if (!condition) {
 			break;
 		}
-		try {
-			EvalNode(*loop.loopBlock);
+		Value result = EvalNode(*loop.loopBlock);
+		if (!variantHas<Control>(result)) {
+			continue;
 		}
-		catch (BreakException) {
+		auto flow = std::get<Control>(result);
+		if (auto ret = std::get_if<Return>(&flow)) {
+			return *ret;
+		}
+		if (auto brk = std::get_if<Break>(&flow)) {
 			break;
 		}
 
@@ -290,12 +307,21 @@ Value Interpreter::EvalWhile(WhileNode loop) {
 }
 Value Interpreter::EvalNode(Node expr) {
 	if (auto val = std::get_if<Value>(&expr)) {
-		return *val;
+		if (!variantHas<Control>(*val)) {
+			return *val;
+		}
+		auto flow = std::get<Control>(*val);
+		if (auto ret = std::get_if<Return>(&flow)) {
+			Value retValue = EvalNode(*ret->object);
+			ret->object = &retValue;
+			return Control(*ret);
+		}
+		return flow;
+		
 	}
 	else if (auto block = std::get_if<Block>(&expr)) {
 		
-		EvalBlock(*block);
-		return NoneType();
+		return EvalBlock(*block);
 	}
 	else if (auto var = std::get_if<Variable>(&expr)) {
 		Value varVal = EvalVariable(*var);
@@ -318,19 +344,10 @@ Value Interpreter::EvalNode(Node expr) {
 		EvalAssignment(*ass);
 		return NoneType();
 	}
-	else if (auto ret = std::get_if<Return>(&expr)) {
-		Node returnVal = *ret->object;
-		Value result = EvalNode(returnVal);
-		throw ReturnException(result);
-	}
 	else if (auto loop = std::get_if<WhileNode>(&expr)) {
 		EvalWhile(*loop);
 		return NoneType();
 	}
-	else if (auto brk = std::get_if<Break>(&expr)) {
-		throw BreakException();
-	}
-
 };
 
 Interpreter::Interpreter(Block program, std::map<string, Value> base) {

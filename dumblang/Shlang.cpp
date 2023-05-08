@@ -1,7 +1,7 @@
 ﻿
 #include "Scanner.h"
 #include "Interpreter.h"
-
+#include "ShlangError.h"
 
 
 void RPL() {
@@ -32,7 +32,7 @@ void langTest() {
             new Node(9.0),
             new Node(9.0)
         ))),
-
+        Return(new Node(Variable("result")))
     });
     Block programBlock = Block({
 

@@ -139,7 +139,7 @@ void Interpreter::EvalAssignment(Assignment ass) {
 		if (variantHas<NoneType>(*ret->object)) {
 			throw UnspecifiedError("Cannot assign None to a variable");
 		}
-		current.define(ass.varName, *ret->object);
+		current.define(ass.varName, EvalNode(*ret->object));
 		return;
 	}
 }
@@ -151,7 +151,7 @@ Value Interpreter::EvalBlock(Block block) {
 	current = newScope;
 	current.to_string();
 	if (block.body.size() == 0) {
-		return;
+		return NoneType();
 	}
 	std::vector<Node> body = block.body;
 	for (size_t i = 0; i < body.size(); i++)
@@ -160,10 +160,12 @@ Value Interpreter::EvalBlock(Block block) {
 		Node statement = body[i];
 		Value result = EvalNode(statement);
 		if (auto control = std::get_if<Control>(&result)) {
+			current = *newScope.parentScope;
 			return *control;
 		}
 	}
 	current = *newScope.parentScope;
+	
 };
 
 Value Interpreter::EvalVariable(Variable var) {
@@ -256,7 +258,7 @@ Value Interpreter::EvalCall(Call request) {
 	}
 	auto flow = std::get<Control>(result);
 	if (auto ret = std::get_if<Return>(&flow)) {
-		return *ret->object;
+		return EvalNode(*ret->object);
 	}
 }
 Value Interpreter::EvalBranch(BranchNode branch) {
@@ -313,7 +315,7 @@ Value Interpreter::EvalNode(Node expr) {
 		auto flow = std::get<Control>(*val);
 		if (auto ret = std::get_if<Return>(&flow)) {
 			Value retValue = EvalNode(*ret->object);
-			ret->object = &retValue;
+			ret->object = new Node(retValue);
 			return Control(*ret);
 		}
 		return flow;

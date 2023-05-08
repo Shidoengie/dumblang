@@ -128,9 +128,7 @@ Value Interpreter::CallBuiltinFunc(BuiltinFunc called, std::vector<Value> argVal
 }
 void Interpreter::EvalAssignment(Assignment ass) {
 	Value assVal = EvalNode(*ass.value);
-	if (variantHas<NoneType>(assVal)) {
-		throw UnspecifiedError("Cannot assign None to a variable");
-	}
+	
 	
 	if (!variantHas<Control>(assVal)) {
 		current.define(ass.varName, assVal);
@@ -138,9 +136,6 @@ void Interpreter::EvalAssignment(Assignment ass) {
 	}
 	auto flow = std::get<Control>(assVal);
 	if (auto ret = std::get_if<Return>(&flow)) {
-		if (variantHas<NoneType>(EvalNode(*ret->object))) {
-			throw UnspecifiedError("Cannot assign None to a variable");
-		}
 		current.define(ass.varName, EvalNode(*ret->object));
 		return;
 	}
@@ -172,10 +167,16 @@ Value Interpreter::EvalBlock(Block block) {
 
 Value Interpreter::EvalVariable(Variable var) {
 
-	Value varValue = current.getVar(var.name);
-	if (variantHas<NoneType>(varValue)) {
-		throw UndefinedVariableError(var.name);
+	if (current.containsVar(var.name)) {
+		Value varRes = current.varMap[var.name];
+		return varRes;
 	}
+	std::optional<Value> varValue = current.getVar(var.name);
+	
+	if (varValue) {
+		return *varValue;
+	}
+	throw UndefinedVariableError(var.name);
 	
 }
 
@@ -226,12 +227,13 @@ Value Interpreter::EvalBinaryNode(BinaryNode binOp) {
 }
 
 Value Interpreter::EvalCall(Call request) {
-	Value getFunc = current.getVar(request.callee.name);
+	Value getFunc = EvalNode(request.callee);
+
 	std::vector<Value> argValues;
 	for (size_t index = 0; index < request.args.size(); index++) {
 		Node argument = request.args[index];
 		if (auto var = std::get_if<Variable>(&argument)) {
-			argValues.push_back(current.getVar(var->name));
+			argValues.push_back(EvalNode(*var));
 			continue;
 		}
 		argValues.push_back(EvalNode(request.args[index]));

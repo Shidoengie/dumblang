@@ -31,7 +31,7 @@ std::string ValueToString(Value val) {
 bool Scope::isAtend() {
     return parentScope == nullptr;
 }
-Value Scope::getVar(std::string varName) {
+std::optional<Value> Scope::getVar(std::string varName) {
     auto current = this;
     
     while (true) {
@@ -46,7 +46,7 @@ Value Scope::getVar(std::string varName) {
         current = current->parentScope;
     }
 
-    throw UndefinedVariableError(varName);
+    return {};
 }
 bool Scope::containsVar(std::string varName) {
     return varMap.contains(varName);

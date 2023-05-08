@@ -1,6 +1,8 @@
 #include "Interpreter.h"
 #include "ShlangError.h"
+
 template<class Ty, class... Types>
+
 constexpr bool variantHas(const std::variant<Types...>& var) noexcept {
 	return std::holds_alternative<Ty>(var);
 }
@@ -136,7 +138,7 @@ void Interpreter::EvalAssignment(Assignment ass) {
 	}
 	auto flow = std::get<Control>(assVal);
 	if (auto ret = std::get_if<Return>(&flow)) {
-		if (variantHas<NoneType>(*ret->object)) {
+		if (variantHas<NoneType>(EvalNode(*ret->object))) {
 			throw UnspecifiedError("Cannot assign None to a variable");
 		}
 		current.define(ass.varName, EvalNode(*ret->object));

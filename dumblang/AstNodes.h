@@ -22,7 +22,7 @@ struct WhileNode;
 struct Break {};
 struct NoneType;
 struct BlockEnd {};
-using Control = std::variant< Return, Break >;
+using Control = std::variant< Return, Break>;
 using Value = std::variant< NoneType, double, std::string, Function, BuiltinFunc,Control> ;
 
 using Node = std::variant<

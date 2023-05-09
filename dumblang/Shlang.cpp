@@ -40,6 +40,7 @@ void langTest() {
         Call("print",{Variable("var")})
         
     });
+    
     auto it = Interpreter(programBlock);
     try {
         it.execute();

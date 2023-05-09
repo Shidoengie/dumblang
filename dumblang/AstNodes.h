@@ -19,6 +19,7 @@ struct Block;
 struct Return;
 struct BranchNode;
 struct WhileNode;
+struct LoopNode;
 struct Break {};
 struct NoneType;
 struct BlockEnd {};
@@ -29,12 +30,12 @@ using Node = std::variant<
 	Value, BinaryNode, UnaryNode,
 	Variable, Assignment, Call,
 	Block,BlockEnd, BranchNode,
-	WhileNode
+	WhileNode,LoopNode
 >;
 using NodeStream = std::vector<Node>;
 using ValueStream = std::vector<Value>;
-std::string ValueToString(Value val);
 
+std::string ValueToString(Value val);
 struct BinaryNode {
 	enum Type{
 		ADD,
@@ -104,6 +105,9 @@ struct BranchNode {
 	Node* condition;
 	Block* ifBlock;
 	Block* elseBlock;
+};
+struct LoopNode {
+	Block* loopBlock;
 };
 struct WhileNode {
 	Node* condition;

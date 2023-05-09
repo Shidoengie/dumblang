@@ -83,7 +83,7 @@ public:
 	};
 };
 
-class InvalidArgumentsError : public InterpreterError {
+class InvalidArgSizeError : public InterpreterError {
 
 public:
 	
@@ -94,7 +94,7 @@ public:
 		
 		return msg.c_str();
 	};
-	InvalidArgumentsError(int expectedLenght_ , int lenght_) {
+	InvalidArgSizeError(int expectedLenght_ , int lenght_) {
 		this->lenght = lenght_;
 		this->expectedLenght = expectedLenght_;
 		msg = "Invalid Argument size expected : <" + std::to_string(expectedLenght) + " > got : <" + std::to_string(lenght) + " >";

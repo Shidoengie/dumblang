@@ -1,6 +1,16 @@
 #include "Interpreter.h"
 #include "Defaults.h"
-
+static const Value Number = Value(0.0);
+Value Interpreter::UnwrapReturn(Value result) {
+	if (!variantHas<Control>(result)) {
+		return NoneType();
+	}
+	auto flow = std::get<Control>(result);
+	if (variantHas<Return>(flow)) {
+		return flow;
+	}
+	return NoneType();
+}
 double Interpreter::numCalc(BinaryNode::Type opType, double leftValue, double rightValue) {
 	bool leftBool = BoolConvert(leftValue);
 	bool rightBool = BoolConvert(rightValue);
@@ -78,7 +88,7 @@ Value Interpreter::strCalc(BinaryNode::Type opType, string leftValue, string rig
 }
 Value Interpreter::CallBuiltinFunc(BuiltinFunc called, ValueStream argValues) {
 	if (called.argSize != -1 && argValues.size() != called.argSize) {
-		throw InvalidArgumentsError(argValues.size(), called.argSize);
+		throw InvalidArgSizeError(argValues.size(), called.argSize);
 	}
 	return called.funcPointer(argValues);
 }
@@ -144,19 +154,19 @@ Value Interpreter::EvalUnaryNode(UnaryNode unaryOp) {
 		if (auto val = std::get_if<double>(&obj)) {
 			return -(*val);
 		}
-		throw InvalidTypeError(obj,Value(0.0));
+		throw InvalidTypeError(obj,Number);
 	case UnaryNode::POSITIVE:
 		if (auto val = std::get_if<double>(&obj)) {
 			return +(*val);
 		}
-		throw InvalidTypeError(obj, Value(0.0));
+		throw InvalidTypeError(obj, Number);
 		break;
 	case UnaryNode::NOT:
 		if (auto val = std::get_if<double>(&obj)) {
 			bool out = BoolConvert(*val);
 			return (double)(!out);
 		}
-		throw InvalidTypeError(obj, Value(0.0));
+		throw InvalidTypeError(obj, Number);
 	default:
 		break;
 	}
@@ -172,7 +182,7 @@ Value Interpreter::EvalBinaryNode(BinaryNode binOp) {
 		if (binOp.type == BinaryNode::ISDIFERENT) {
 			return 1.0;
 		}
-		throw MixedTypesError({leftValue,rightValue},{Value(0.0),Value(0.0)});
+		throw MixedTypesError({leftValue,rightValue},{Number,Number});
 	}
 	if (variantHas<double>(leftValue)) {
 		return numCalc(binOp.type, std::get<double>(leftValue), std::get<double>(rightValue));
@@ -203,7 +213,7 @@ Value Interpreter::EvalCall(Call request) {
 	}
 	Function calledFunc = std::get<Function>(getFunc);
 	if (request.args.size() != calledFunc.args.size()) {
-		throw InvalidArgumentsError(request.args.size(), calledFunc.args.size());
+		throw InvalidArgSizeError(request.args.size(), calledFunc.args.size());
 	}
 	NodeStream argAssignements;
 	for (size_t index = 0; index < calledFunc.args.size(); index++) {
@@ -226,27 +236,28 @@ Value Interpreter::EvalBranch(BranchNode branch) {
 	Value conditionVal = EvalNode(*branch.condition);
 	if (!variantHas<double>(conditionVal)) {
 
-		throw InvalidTypeError(conditionVal, Value(0.0));
+		throw InvalidTypeError(conditionVal, Number);
 	}
 	bool condition = BoolConvert(std::get<double>(conditionVal));
 	if (branch.ifBlock == nullptr) {
 		throw InvalidBranchFormatError();
 	}
 	else if (condition) {
-		EvalNode(*branch.ifBlock);
-		return NoneType();
+		Value result = EvalNode(*branch.ifBlock);
+		return UnwrapReturn(result);
 	}
 	else if (branch.elseBlock != nullptr) {
-		EvalNode(*branch.elseBlock);
-		return NoneType();
+		Value result = EvalNode(*branch.elseBlock);
+		return UnwrapReturn(result);
 	}
-	return NoneType();
 }
 Value Interpreter::EvalWhile(WhileNode loop) {
 	bool condition = true;
 	while (true) {
 		Value conditionVal = EvalNode(*loop.condition);
 		if (!variantHas<double>(conditionVal)) {
+			throw InvalidTypeError(Number,conditionVal);
+			break;
 		}
 		condition = BoolConvert(std::get<double>(conditionVal));
 		if (!condition) {
@@ -257,16 +268,32 @@ Value Interpreter::EvalWhile(WhileNode loop) {
 			continue;
 		}
 		auto flow = std::get<Control>(result);
-		if (auto ret = std::get_if<Return>(&flow)) {
-			return *ret;
+		if (variantHas<Return>(flow)) {
+			return flow;
 		}
-		if (auto brk = std::get_if<Break>(&flow)) {
+		if (variantHas<Break>(flow)) {			
 			break;
 		}
 
 	}
 	return NoneType();
 
+}
+Value Interpreter::EvalLoop(LoopNode loop) {
+	while (true) {
+		Value result = EvalNode(*loop.loopBlock);
+		if (!variantHas<Control>(result)) {
+			continue;
+		}
+		auto flow = std::get<Control>(result);
+		if (variantHas<Return>(flow)) {
+			return flow;
+		}
+		if (variantHas<Break>(flow)) {
+			break;
+		}
+	}
+	return NoneType();
 }
 Value Interpreter::EvalNode(Node expr) {
 	if (auto val = std::get_if<Value>(&expr)) {
@@ -300,7 +327,8 @@ Value Interpreter::EvalNode(Node expr) {
 		return EvalBinaryNode(*binOp);
 	}
 	else if (auto branch = std::get_if<BranchNode>(&expr)) {
-		return EvalBranch(*branch);
+		Value result = EvalBranch(*branch);
+		return UnwrapReturn(result);
 	}
 	
 	else if (auto ass = std::get_if<Assignment>(&expr)) {
@@ -308,8 +336,12 @@ Value Interpreter::EvalNode(Node expr) {
 		return NoneType();
 	}
 	else if (auto loop = std::get_if<WhileNode>(&expr)) {
-		EvalWhile(*loop);
-		return NoneType();
+		Value result = EvalWhile(*loop);
+		return UnwrapReturn(result);
+	}
+	else if (auto loop = std::get_if<LoopNode>(&expr)) {
+		Value result = EvalLoop(*loop);
+		return UnwrapReturn(result);
 	}
 };
 

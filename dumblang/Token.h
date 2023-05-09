@@ -50,6 +50,7 @@ public:
         EOFL,
         FALSE,
         TRUE,
+        WHILE
     };
     Token::Type type;
     std::variant<double, std::string> lexeme;

@@ -24,20 +24,58 @@ void RPL() {
     }
 }
 void langTest() {
-    Node Block1 = Block({
-
-    Assignment("result",new Node(
-        BinaryNode(
-            BinaryNode::ADD,
-            new Node(9.0),
-            new Node(9.0)
-        ))),
-        Return(new Node(Variable("result")))
+    Block condBlock = Block({
+        Value(Control(Break()))
     });
+    Block printNumber = Block({
+        Call("print",{Node(Variable("i"))})
+    });
+    Block printFizz = Block({
+        Call("print",{Node(Value("Fizz"))})
+    });
+    Block printBuzz = Block({
+        Call("print",{Node(Value("Buzz"))})
+    });
+    Block buzzBranch = Block({ Node(BranchNode(
+        new Node(BinaryNode(
+            BinaryNode::MODULO,
+            new Node(Variable("i")),
+            new Node(5.0)
+        )), &printBuzz, nullptr
+    )) });
+
+    Block loopBlock = Block({
+
+        Node(Assignment("i",
+        new Node(BinaryNode(
+            BinaryNode::ADD,
+            new Node(Variable("i")),
+            new Node(1.0)
+        )))),
+        Node(BranchNode(
+            new Node(BinaryNode(
+                BinaryNode::MODULO,
+                new Node(Variable("i")),
+                new Node(3.0)
+            )), &printFizz,&buzzBranch
+        )),
+        
+
+        Node(Call("print",{Node(Variable("i"))})),
+        Node(BranchNode(
+            new Node(BinaryNode(
+                BinaryNode::GREATER_EQUAL,
+                new Node(Variable("i")),
+                new Node(100.0)
+            )), &condBlock,nullptr
+        ))
+        
+        });
     Block programBlock = Block({
 
-        Assignment("var",&Block1),
-        Call("print",{Variable("var")})
+        Assignment("i",new Node(0.0)),
+
+        LoopNode(&loopBlock)
         
     });
     

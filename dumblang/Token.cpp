@@ -26,6 +26,7 @@ std::map<std::string, Token::Type> GetKeywordMap() {
         {"elif",Token::ELIF},
         {"else",Token::ELSE},
         {"loop",Token::LOOP},
+        {"while",Token::WHILE},
         {"break",Token::BREAK}
     };
     return KeywordMap;

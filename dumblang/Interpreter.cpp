@@ -29,6 +29,7 @@ double Interpreter::numCalc(BinaryNode::Type opType, double leftValue, double ri
 		return leftValue - rightValue;
 		break;
 	case BinaryNode::MODULO:
+		return fmod(leftValue, rightValue);
 		break;
 	case BinaryNode::AND:
 		return (double)(leftBool && rightBool);
@@ -112,7 +113,6 @@ Value Interpreter::EvalBlock(Block block) {
 	Scope currentCopy = current;
 	auto newScope = Scope(&currentCopy,{ });
 	current = newScope;
-	current.to_string();
 	if (block.body.size() == 0) {
 		return NoneType();
 	}
@@ -128,7 +128,7 @@ Value Interpreter::EvalBlock(Block block) {
 		}
 	}
 	current = *newScope.parentScope;
-	
+	return NoneType();
 };
 
 Value Interpreter::EvalVariable(Variable var) {
@@ -244,12 +244,13 @@ Value Interpreter::EvalBranch(BranchNode branch) {
 	}
 	else if (condition) {
 		Value result = EvalNode(*branch.ifBlock);
-		return UnwrapReturn(result);
+		return result;
 	}
 	else if (branch.elseBlock != nullptr) {
 		Value result = EvalNode(*branch.elseBlock);
-		return UnwrapReturn(result);
+		return result;
 	}
+	return NoneType();
 }
 Value Interpreter::EvalWhile(WhileNode loop) {
 	bool condition = true;
@@ -311,7 +312,8 @@ Value Interpreter::EvalNode(Node expr) {
 	}
 	else if (auto block = std::get_if<Block>(&expr)) {
 		
-		return EvalBlock(*block);
+		Value result = EvalBlock(*block);
+		return result;
 	}
 	else if (auto var = std::get_if<Variable>(&expr)) {
 		Value varVal = EvalVariable(*var);
@@ -328,7 +330,7 @@ Value Interpreter::EvalNode(Node expr) {
 	}
 	else if (auto branch = std::get_if<BranchNode>(&expr)) {
 		Value result = EvalBranch(*branch);
-		return UnwrapReturn(result);
+		return result;
 	}
 	
 	else if (auto ass = std::get_if<Assignment>(&expr)) {
@@ -343,6 +345,7 @@ Value Interpreter::EvalNode(Node expr) {
 		Value result = EvalLoop(*loop);
 		return UnwrapReturn(result);
 	}
+	throw UnspecifiedError("IDK");
 };
 
 Interpreter::Interpreter(Block program, std::map<string, Value> base) {

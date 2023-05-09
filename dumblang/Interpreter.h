@@ -3,9 +3,6 @@
 
 using std::cout;
 using std::string;
-Value PrintBuiltin(std::vector<Value> arguments);
-Value InputBuiltin(std::vector<Value> arguments);
-
 class Interpreter {
 public:
 	Block program_;
@@ -13,11 +10,11 @@ public:
 private:
 	Value EvalNode(Node expr);
 	Scope current;
-	bool BoolConvert(double val);
+	
 
 	double numCalc(BinaryNode::Type opType, double leftValue, double rightValue);
 	Value strCalc(BinaryNode::Type opType, string leftValue, string rightValue);
-	Value CallBuiltinFunc(BuiltinFunc called, std::vector<Value> argValues);
+	Value CallBuiltinFunc(BuiltinFunc called, ValueStream argValues);
 	void EvalAssignment(Assignment ass);
 	Value EvalBlock(Block block);
 	Value EvalVariable(Variable var);

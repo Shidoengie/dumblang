@@ -31,6 +31,8 @@ using Node = std::variant<
 	Block,BlockEnd, BranchNode,
 	WhileNode
 >;
+using NodeStream = std::vector<Node>;
+using ValueStream = std::vector<Value>;
 std::string ValueToString(Value val);
 
 struct BinaryNode {
@@ -70,7 +72,7 @@ struct Variable {
 	std::string name;
 };
 struct Block {
-	std::vector<Node> body;
+	NodeStream body;
 };
 struct Return {
 	Node* object;
@@ -80,12 +82,12 @@ struct NoneType {
 };
 struct Call {
 	Variable callee;
-	std::vector<Node> args;
-	Call(std::string callee_, std::vector<Node> args_) {
+	NodeStream args;
+	Call(std::string callee_, NodeStream args_) {
 		this->callee = Variable(callee_);
 		this->args = args_;
 	}
-	Call(Variable callee_, std::vector<Node> args_) {
+	Call(Variable callee_, NodeStream args_) {
 		this->callee = callee_;
 		this->args = args_;
 	}
@@ -95,7 +97,7 @@ struct Function {
 	std::vector<std::string> args;
 };
 struct BuiltinFunc {
-	Value(*funcPointer)(std::vector<Value>);
+	Value(*funcPointer)(ValueStream);
 	int argSize;
 };
 struct BranchNode {

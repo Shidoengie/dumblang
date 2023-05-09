@@ -142,6 +142,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Defaults.cpp" />
     <ClCompile Include="Interpreter.cpp" />
     <ClCompile Include="AstNodes.cpp" />
     <ClCompile Include="Parser.cpp" />
@@ -151,6 +152,7 @@
     <ClCompile Include="Token.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Defaults.h" />
     <ClInclude Include="Interpreter.h" />
     <ClInclude Include="AstNodes.h" />
     <ClInclude Include="Parser.h" />

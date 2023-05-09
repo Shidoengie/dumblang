@@ -118,15 +118,15 @@ public:
 };
 class MixedTypesError : public InterpreterError {
 public:
-	std::vector<Value> specifiedType;
-	std::vector<Value> exceptedType;
+	ValueStream specifiedType;
+	ValueStream exceptedType;
 	
 	std::vector<std::string> typeMap = { "None","double","string","Function","FunctionCall","BuiltinFunc","Control" };
 	virtual const char* what() const noexcept override {
 		
 		return msg.c_str();
 	};
-	MixedTypesError(std::vector<Value> specifiedType_, std::vector<Value> exceptedType_) {
+	MixedTypesError(ValueStream specifiedType_, ValueStream exceptedType_) {
 		this->specifiedType = specifiedType_;
 		this->exceptedType = exceptedType_;
 		msg = ("Mixed Types expected: < " + typeMap[exceptedType[0].index()] + "and: " + typeMap[exceptedType[1].index()] + " > got: <" + typeMap[specifiedType[0].index()] + "and: " + typeMap[specifiedType[1].index()] + " >");

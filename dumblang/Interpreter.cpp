@@ -1,50 +1,6 @@
 #include "Interpreter.h"
-#include "ShlangError.h"
+#include "Defaults.h"
 
-template<class Ty, class... Types>
-
-constexpr bool variantHas(const std::variant<Types...>& var) noexcept {
-	return std::holds_alternative<Ty>(var);
-}
-
-
-
-Value PrintBuiltin(std::vector<Value> arguments) {
-	for (auto const& argument : arguments) {
-		if (variantHas<string>(argument)) {
-			cout << std::get<string>(argument) << '\n';
-		}
-		if (variantHas<double>(argument)) {
-			cout << std::get<double>(argument) << '\n';
-		}
-	}
-	return NoneType();
-}
-Value InputBuiltin(std::vector<Value> arguments) {
-	PrintBuiltin(arguments);
-	string out;
-	std::getline(std::cin, out);
-	return Value(out);
-};
-Value StringToNum(std::vector<Value> arguments) {
-	Value argument = arguments[0];
-	if (auto val = std::get_if<string>(&argument)) {
-		try {
-			return std::stod(*val);
-		}
-		catch (std::invalid_argument) {
-			throw InvalidStringFormatError(*val);
-		}
-	}
-	if (variantHas<double>(argument)) {
-		return argument;
-	}
-
-}
-bool Interpreter::BoolConvert(double val) {
-	bool out = (val != 0.0) ? true : false;
-	return out;
-};
 double Interpreter::numCalc(BinaryNode::Type opType, double leftValue, double rightValue) {
 	bool leftBool = BoolConvert(leftValue);
 	bool rightBool = BoolConvert(rightValue);
@@ -120,7 +76,7 @@ Value Interpreter::strCalc(BinaryNode::Type opType, string leftValue, string rig
 		break;
 	}
 }
-Value Interpreter::CallBuiltinFunc(BuiltinFunc called, std::vector<Value> argValues) {
+Value Interpreter::CallBuiltinFunc(BuiltinFunc called, ValueStream argValues) {
 	if (called.argSize != -1 && argValues.size() != called.argSize) {
 		throw InvalidArgumentsError(argValues.size(), called.argSize);
 	}
@@ -150,7 +106,7 @@ Value Interpreter::EvalBlock(Block block) {
 	if (block.body.size() == 0) {
 		return NoneType();
 	}
-	std::vector<Node> body = block.body;
+	NodeStream body = block.body;
 	for (size_t i = 0; i < body.size(); i++)
 	{
 
@@ -229,12 +185,13 @@ Value Interpreter::EvalBinaryNode(BinaryNode binOp) {
 Value Interpreter::EvalCall(Call request) {
 	Value getFunc = EvalNode(request.callee);
 
-	std::vector<Value> argValues;
+	ValueStream argValues;
 	for (size_t index = 0; index < request.args.size(); index++) {
 		Node argument = request.args[index];
 		if (auto var = std::get_if<Variable>(&argument)) {
 			argValues.push_back(EvalNode(*var));
 			continue;
+
 		}
 		argValues.push_back(EvalNode(request.args[index]));
 	}
@@ -248,11 +205,11 @@ Value Interpreter::EvalCall(Call request) {
 	if (request.args.size() != calledFunc.args.size()) {
 		throw InvalidArgumentsError(request.args.size(), calledFunc.args.size());
 	}
-	std::vector<Node> argAssignements;
+	NodeStream argAssignements;
 	for (size_t index = 0; index < calledFunc.args.size(); index++) {
 		string var = calledFunc.args[index];
-		Value assignVal = argValues[index];
-		argAssignements.push_back(Assignment(var, new Node(assignVal)));
+		Node assignVal = argValues[index];
+		argAssignements.push_back(Assignment(var, &assignVal));
 	}
 	argAssignements.append_range(calledFunc.block.body);
 	calledFunc.block.body = argAssignements;
@@ -365,16 +322,9 @@ Interpreter::Interpreter(Block program, Scope base) {
 	program_ = program;
 }
 Interpreter::Interpreter(Block program) {
-	std::map<string, Value> defMap = {
-		{"Test",2.0},
-		{"PI",3.146210},
-		{"strToNum",BuiltinFunc(&StringToNum,1)},
-		{"print",BuiltinFunc(&PrintBuiltin,-1)},
-		{"input",BuiltinFunc(&InputBuiltin,1)}
-	};
 	Scope* baseScope = new Scope();
 	baseScope->parentScope = nullptr;
-	baseScope->varMap = defMap;
+	baseScope->varMap = getDefaultVarMap();
 	current = *baseScope;
 	program_ = program;
 }

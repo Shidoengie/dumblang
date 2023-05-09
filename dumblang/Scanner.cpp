@@ -15,7 +15,10 @@ Scanner::Scanner(std::string _source)
 }
 
 char8_t Scanner::advance() {
-	return source[current++];
+	
+	char8_t last = source[current];
+	current++;
+	return last;
 }
 
 bool Scanner::isAtEnd() {
@@ -58,7 +61,7 @@ void Scanner::str() {
 	do {
 		endStr += LastChar;
 		if (isAtEnd()) {
-			throw LangError("Undetermined string", LangError::LEXER);
+			throw UndeterminedStringError();
 		}
 		LastChar = advance();
 	} while (LastChar != '"');
@@ -129,7 +132,7 @@ void Scanner::getToken() {
 			identifier(LastChar);
 		}
 		else {
-			throw LangError("Unexpected char", LangError::LEXER);
+			throw UnexpectedCharError(LastChar);
 		}
 		break;
 	}

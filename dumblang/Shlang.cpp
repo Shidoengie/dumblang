@@ -1,7 +1,7 @@
 ﻿
 #include "Scanner.h"
-#include "AST.h"
-
+#include "Interpreter.h"
+#include "ShlangError.h"
 
 
 void RPL() {
@@ -14,7 +14,7 @@ void RPL() {
         try {
             TkStream = scan.scanTokens();
         }
-        catch (LangError& err) {
+        catch (std::exception& err) {
             std::cerr << err.what() << '\n';
         }
         for (size_t i = 0; i < TkStream.size(); i++)
@@ -24,31 +24,27 @@ void RPL() {
     }
 }
 void langTest() {
-    auto block2 = Block({
-        Assignment("b",new Node("SCREAM IF IT PRINTS")),
-        Assignment("as",new Node("b")),
-        Call("print",{Variable("as")}),
-        Call("print",{Variable("fg")})
-    });
-    auto block1 = Block({
+    Node Block1 = Block({
 
-        Assignment("as",new Node("a")),
-        Call("print",{Variable("as")}),
-        block2,
-        Call("print",{Variable("as")}),
+    Assignment("result",new Node(
+        BinaryNode(
+            BinaryNode::ADD,
+            new Node(9.0),
+            new Node(9.0)
+        ))),
+        Return(new Node(Variable("result")))
+    });
+    Block programBlock = Block({
+
+        Assignment("var",&Block1),
+        Call("print",{Variable("var")})
         
     });
-    auto programBlock = Block({
-        Assignment("fg",new Node("da")),
-        block1,
-        Call("print",{Variable("b")}),
-        
-    });
-    auto it = Interpreter();
+    auto it = Interpreter(programBlock);
     try {
-        Value idk = it.EvalNode(programBlock);
+        it.execute();
     }
-    catch (LangError err) {
+    catch (LangError& err) {
         std::cerr << err.what() << '\n';
     }
 }

@@ -1,7 +1,7 @@
 #include "Interpreter.h"
 #include "Defaults.h"
 static const Value Number = Value(0.0);
-Value Interpreter::UnwrapReturn(Value result) {
+Value Interpreter::FilterReturn(Value result) {
 	if (!variantHas<Control>(result)) {
 		return NoneType();
 	}
@@ -11,6 +11,70 @@ Value Interpreter::UnwrapReturn(Value result) {
 	}
 	return NoneType();
 }
+Value Interpreter::UnwrapReturnValue(Value result) {
+	if (!variantHas<Control>(result)) {
+		return result;
+	}
+	auto flow = std::get<Control>(result);
+	if (auto retVal = std::get_if<Return>(&flow)) {
+		return EvalNode(*retVal->object);
+	}
+	return result;
+}
+
+
+void Interpreter::EvalDeclaration(Declaration request) {
+	current.define(request.varName, EvalNode(*request.value));
+}
+Value Interpreter::EvalAssignment(Assignment ass) {
+	Value assVal = UnwrapReturnValue(EvalNode(*ass.value));
+	
+	std::optional<Value> hasVar = current.assign(ass.varName, assVal);
+	if (hasVar) {
+		return assVal;
+	}
+	throw UndefinedVariableError(ass.varName);
+
+	
+}
+Value Interpreter::EvalVariable(Variable var) {
+
+	if (current.containsVar(var.name)) {
+		Value varRes = current.varMap[var.name];
+		return varRes;
+	}
+	std::optional<Value> varValue = current.getVar(var.name);
+
+	if (varValue) {
+		return *varValue;
+	}
+	throw UndefinedVariableError(var.name);
+}
+
+Value Interpreter::EvalBlock(Block block) {
+	
+	Scope currentCopy = current;
+	auto newScope = Scope(&currentCopy,{ });
+	current = newScope;
+	if (block.body.size() == 0) {
+		return NoneType();
+	}
+	NodeStream body = block.body;
+	for (size_t i = 0; i < body.size(); i++)
+	{
+
+		Node statement = body[i];
+		Value result = EvalNode(statement);
+		if (auto control = std::get_if<Control>(&result)) {
+			current = *newScope.parentScope;
+			return *control;
+		}
+	}
+	current = *newScope.parentScope;
+	return NoneType();
+};
+
+
 double Interpreter::numCalc(BinaryNode::Type opType, double leftValue, double rightValue) {
 	bool leftBool = BoolConvert(leftValue);
 	bool rightBool = BoolConvert(rightValue);
@@ -87,65 +151,6 @@ Value Interpreter::strCalc(BinaryNode::Type opType, string leftValue, string rig
 		break;
 	}
 }
-Value Interpreter::CallBuiltinFunc(BuiltinFunc called, ValueStream argValues) {
-	if (called.argSize != -1 && argValues.size() != called.argSize) {
-		throw InvalidArgSizeError(argValues.size(), called.argSize);
-	}
-	return called.funcPointer(argValues);
-}
-void Interpreter::EvalAssignment(Assignment ass) {
-	Value assVal = EvalNode(*ass.value);
-	
-	
-	if (!variantHas<Control>(assVal)) {
-		current.define(ass.varName, assVal);
-		return;
-	}
-	auto flow = std::get<Control>(assVal);
-	if (auto ret = std::get_if<Return>(&flow)) {
-		current.define(ass.varName, EvalNode(*ret->object));
-		return;
-	}
-}
-
-Value Interpreter::EvalBlock(Block block) {
-	
-	Scope currentCopy = current;
-	auto newScope = Scope(&currentCopy,{ });
-	current = newScope;
-	if (block.body.size() == 0) {
-		return NoneType();
-	}
-	NodeStream body = block.body;
-	for (size_t i = 0; i < body.size(); i++)
-	{
-
-		Node statement = body[i];
-		Value result = EvalNode(statement);
-		if (auto control = std::get_if<Control>(&result)) {
-			current = *newScope.parentScope;
-			return *control;
-		}
-	}
-	current = *newScope.parentScope;
-	return NoneType();
-};
-
-Value Interpreter::EvalVariable(Variable var) {
-
-	if (current.containsVar(var.name)) {
-		Value varRes = current.varMap[var.name];
-		return varRes;
-	}
-	std::optional<Value> varValue = current.getVar(var.name);
-	
-	if (varValue) {
-		return *varValue;
-	}
-	throw UndefinedVariableError(var.name);
-	
-}
-
 Value Interpreter::EvalUnaryNode(UnaryNode unaryOp) {
 	Value obj = EvalNode(*unaryOp.object);
 	switch (unaryOp.type)
@@ -191,7 +196,12 @@ Value Interpreter::EvalBinaryNode(BinaryNode binOp) {
 		return strCalc(binOp.type, std::get<string>(leftValue), std::get<string>(rightValue));
 	}
 }
-
+Value Interpreter::CallBuiltinFunc(BuiltinFunc called, ValueStream argValues) {
+	if (called.argSize != -1 && argValues.size() != called.argSize) {
+		throw InvalidArgSizeError(argValues.size(), called.argSize);
+	}
+	return called.funcPointer(argValues);
+}
 Value Interpreter::EvalCall(Call request) {
 	Value getFunc = EvalNode(request.callee);
 
@@ -219,7 +229,7 @@ Value Interpreter::EvalCall(Call request) {
 	for (size_t index = 0; index < calledFunc.args.size(); index++) {
 		string var = calledFunc.args[index];
 		Node assignVal = argValues[index];
-		argAssignements.push_back(Assignment(var, &assignVal));
+		argAssignements.push_back(Declaration(var, &assignVal));
 	}
 	argAssignements.append_range(calledFunc.block.body);
 	calledFunc.block.body = argAssignements;
@@ -296,6 +306,7 @@ Value Interpreter::EvalLoop(LoopNode loop) {
 	}
 	return NoneType();
 }
+
 Value Interpreter::EvalNode(Node expr) {
 	if (auto val = std::get_if<Value>(&expr)) {
 		if (!variantHas<Control>(*val)) {
@@ -332,18 +343,21 @@ Value Interpreter::EvalNode(Node expr) {
 		Value result = EvalBranch(*branch);
 		return result;
 	}
-	
-	else if (auto ass = std::get_if<Assignment>(&expr)) {
-		EvalAssignment(*ass);
+	else if (auto declare = std::get_if<Declaration>(&expr)) {
+		EvalDeclaration(*declare);
 		return NoneType();
+	}
+	else if (auto ass = std::get_if<Assignment>(&expr)) {
+		Value assVal = EvalAssignment(*ass);
+		return assVal;
 	}
 	else if (auto loop = std::get_if<WhileNode>(&expr)) {
 		Value result = EvalWhile(*loop);
-		return UnwrapReturn(result);
+		return FilterReturn(result);
 	}
 	else if (auto loop = std::get_if<LoopNode>(&expr)) {
 		Value result = EvalLoop(*loop);
-		return UnwrapReturn(result);
+		return FilterReturn(result);
 	}
 	throw UnspecifiedError("IDK");
 };

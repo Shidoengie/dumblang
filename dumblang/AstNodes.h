@@ -8,6 +8,7 @@
 #include <stack>
 #include <string>
 #include <optional>
+struct Declaration;
 struct Assignment;
 struct Variable;
 struct BinaryNode;
@@ -21,7 +22,7 @@ struct BranchNode;
 struct WhileNode;
 struct LoopNode;
 struct Break {};
-struct NoneType;
+struct NoneType {};
 struct BlockEnd {};
 using Control = std::variant< Return, Break>;
 using Value = std::variant< NoneType, double, std::string, Function, BuiltinFunc,Control> ;
@@ -30,7 +31,7 @@ using Node = std::variant<
 	Value, BinaryNode, UnaryNode,
 	Variable, Assignment, Call,
 	Block,BlockEnd, BranchNode,
-	WhileNode,LoopNode
+	WhileNode,LoopNode,Declaration
 >;
 using NodeStream = std::vector<Node>;
 using ValueStream = std::vector<Value>;
@@ -65,6 +66,15 @@ struct UnaryNode {
 	Type type;
 	Node* object;
 };
+struct Declaration {
+	std::string varName;
+	Node* value;
+	
+	Declaration(std::string varName_, Node* value_) {
+		varName = varName_;
+		value = value_;
+	}
+};
 struct Assignment {
 	std::string varName;
 	Node* value;
@@ -77,9 +87,6 @@ struct Block {
 };
 struct Return {
 	Node* object;
-};
-struct NoneType {
-
 };
 struct Call {
 	Variable callee;
@@ -120,6 +127,7 @@ struct Scope {
 	std::optional<Value> getVar(std::string varName);
 	bool containsVar(std::string varName);
 	void define(std::string varName, Value val);
+	std::optional<Value> assign(std::string varName, Value val);
 	Scope create_copy() { return *this; }
 	std::string to_string();
 	std::string structure();

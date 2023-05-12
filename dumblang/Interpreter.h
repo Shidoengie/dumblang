@@ -8,17 +8,20 @@ public:
 	Block program_;
 	void execute();
 private:
-	Value UnwrapReturn(Value result);
-	Value EvalNode(Node expr);
 	Scope current;
+
+	Value FilterReturn(Value result);
+	Value UnwrapReturnValue(Value result);
+	Value EvalNode(Node expr);
+	void EvalDeclaration(Declaration request);
+	Value EvalAssignment(Assignment ass);
+	Value EvalVariable(Variable var);
+	Value EvalBlock(Block block);
 	double numCalc(BinaryNode::Type opType, double leftValue, double rightValue);
 	Value strCalc(BinaryNode::Type opType, string leftValue, string rightValue);
-	Value CallBuiltinFunc(BuiltinFunc called, ValueStream argValues);
-	void EvalAssignment(Assignment ass);
-	Value EvalBlock(Block block);
-	Value EvalVariable(Variable var);
 	Value EvalUnaryNode(UnaryNode unaryOp);
 	Value EvalBinaryNode(BinaryNode binOp);
+	Value CallBuiltinFunc(BuiltinFunc called, ValueStream argValues);
 	Value EvalCall(Call request);
 	Value EvalBranch(BranchNode branch);
 	Value EvalWhile(WhileNode loop);

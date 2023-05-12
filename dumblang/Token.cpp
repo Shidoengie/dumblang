@@ -27,13 +27,23 @@ std::map<std::string, Token::Type> GetKeywordMap() {
         {"else",Token::ELSE},
         {"loop",Token::LOOP},
         {"while",Token::WHILE},
-        {"break",Token::BREAK}
+        {"break",Token::BREAK},
+        {"var",Token::VAR}
     };
     return KeywordMap;
 }
 
 std::map<Token::Type, std::string> GetTokenMap() {
     std::map<Token::Type, std::string> TokenMap = {
+        {Token::LOOP,"LOOP"},
+        {Token::WHILE,"WHILE"},
+        {Token::IF,"IF"},
+        {Token::ELIF,"ELIF"},
+        {Token::ELSE,"ELSE"},
+        {Token::VAR,"VAR"},
+        {Token::FUNC,"FUNC"},
+        {Token::RETURN,"RETURN"},
+        {Token::BREAK,"BREAK"},
         {Token::TRUE,"TRUE"},
         {Token::FALSE,"FALSE"},
         {Token::PRINT,"PRINT"},

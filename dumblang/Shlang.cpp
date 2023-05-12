@@ -73,7 +73,7 @@ void langTest() {
         });
     Block programBlock = Block({
 
-        Assignment("i",new Node(0.0)),
+        Declaration("i",new Node(0.0)),
 
         LoopNode(&loopBlock)
         

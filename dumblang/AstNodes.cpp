@@ -52,20 +52,24 @@ bool Scope::containsVar(std::string varName) {
     return varMap.contains(varName);
 }
 void Scope::define(std::string varName, Value val) {
+
+    varMap.insert_or_assign(varName, val);
+}
+std::optional<Value> Scope::assign(std::string varName, Value val) {
     auto current = this;
 
     while (true) {
 
         if (current->varMap.contains(varName)) {
-            current->varMap.insert_or_assign(varName,val);
-            return;
+            current->varMap[varName] = val;
+            return val;
         }
         if (current->parentScope == nullptr) {
             break;
         }
         current = current->parentScope;
     }
-    varMap.insert_or_assign(varName, val);
+    return {};
 }
 std::string Scope::to_string() {
     std::string out = "";

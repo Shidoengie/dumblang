@@ -52,7 +52,6 @@ bool Scope::containsVar(std::string varName) {
     return varMap.contains(varName);
 }
 void Scope::define(std::string varName, Value val) {
-
     varMap.insert_or_assign(varName, val);
 }
 std::optional<Value> Scope::assign(std::string varName, Value val) {

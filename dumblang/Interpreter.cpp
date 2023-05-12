@@ -24,7 +24,8 @@ Value Interpreter::UnwrapReturnValue(Value result) {
 
 
 void Interpreter::EvalDeclaration(Declaration request) {
-	current.define(request.varName, EvalNode(*request.value));
+	Value assVal = UnwrapReturnValue(EvalNode(*request.value));
+	current.define(request.varName, EvalNode(assVal));
 }
 Value Interpreter::EvalAssignment(Assignment ass) {
 	Value assVal = UnwrapReturnValue(EvalNode(*ass.value));

@@ -146,6 +146,7 @@
     <ClCompile Include="Interpreter.cpp" />
     <ClCompile Include="AstNodes.cpp" />
     <ClCompile Include="Parser.cpp" />
+    <ClCompile Include="range.cpp" />
     <ClCompile Include="Scanner.cpp" />
     <ClCompile Include="Shlang.cpp" />
     <ClCompile Include="ShlangError.cpp" />
@@ -156,9 +157,13 @@
     <ClInclude Include="Interpreter.h" />
     <ClInclude Include="AstNodes.h" />
     <ClInclude Include="Parser.h" />
+    <ClInclude Include="range.h" />
     <ClInclude Include="Scanner.h" />
     <ClInclude Include="ShlangError.h" />
     <ClInclude Include="Token.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="grammer.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

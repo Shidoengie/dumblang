@@ -38,87 +38,93 @@ bool Scanner::match(char8_t expected) {
 	current++;
 	return true;
 }
-void Scanner::addToken(Token::Type type, std::variant<double, std::string> lexeme)
+void Scanner::addToken(Token::Type type, Range lexeme)
 {
-	Token token = Token(type, lexeme, line);
+	Token token = Token(type, lexeme);
 	TokenStream.push_back(token);
 }
 void Scanner::num(char8_t LastChar) {
-	std::string numStr;
+	size_t start = current;
 	do {
-		numStr += LastChar;
 		LastChar = advance();
 	} while (isdigit(LastChar) || LastChar == '.');
+	size_t stop = current;
 	current--;
-	double num = stod(numStr);
-	addToken(Token::NUM, num);
+	addToken(Token::NUM, Range(size,start,stop));
 }
 
 void Scanner::str() {
 	
 	char8_t LastChar = advance();
-	std::string endStr;
+	size_t start = current;
 	do {
-		endStr += LastChar;
+		
 		if (isAtEnd()) {
 			throw UndeterminedStringError();
 		}
 		LastChar = advance();
 	} while (LastChar != '"');
-	addToken(Token::STR, endStr);
+	
+	size_t stop = current - 1;
+	addToken(Token::STR, Range(size, start, stop));
 }
 void Scanner::identifier(char8_t LastChar) {
 	std::string endStr;
+	size_t start = current;
 	do {
 		
 		endStr += LastChar;
 		LastChar = advance();
 	} while (isalnum(LastChar));
+	auto identSlice = Range(size, start, current);
 	current--;
-	if (GetKeywordMap().contains(endStr)) {
-		addToken(mapKeyword(endStr), endStr);
+	
+	auto splice = identSlice.splice(source);
+	
+	if (GetKeywordMap().contains(*splice)) {
+		addToken(mapKeyword(endStr), identSlice);
 	}
 	else {
-		addToken(Token::IDENTIFIER, endStr);
+		addToken(Token::IDENTIFIER, identSlice);
 	}
 }
 void Scanner::getToken() {
+	int start = current;
 	char8_t LastChar = advance();
-
+	auto single = Range(source.length());
 	// Skip any whitespace.
 	switch (LastChar)
 	{
 	
-	case '.':addToken(Token::DOT, "."); break;
+	case '.':addToken(Token::DOT, single); break;
 	
-	case ',':addToken(Token::COMMA, ","); break;
-	case '{':addToken(Token::LBRACE, "{"); break;
-	case '}':addToken(Token::RBRACE, "}"); break;
-	case '(':addToken(Token::LPAREN, "("); break;
-	case ')':addToken(Token::RPAREN, ")"); break;
-	case '[':addToken(Token::LBRACK, "["); break;
-	case ']':addToken(Token::RBRACK, "]"); break;
+	case ',':addToken(Token::COMMA, single); break;
+	case '{':addToken(Token::LBRACE, single); break;
+	case '}':addToken(Token::RBRACE, single); break;
+	case '(':addToken(Token::LPAREN, single); break;
+	case ')':addToken(Token::RPAREN, single); break;
+	case '[':addToken(Token::LBRACK, single); break;
+	case ']':addToken(Token::RBRACK, single); break;
 	case '<':
-		match('=') ? addToken(Token::LESSER_EQUAL, "<=") : addToken(Token::LESSER, "<");
+		match('=') ? addToken(Token::LESSER_EQUAL, Range(size, start, current)) : addToken(Token::LESSER, single);
 		break;
 	case '>':
-		match('=') ? addToken(Token::GREATER_EQUAL, ">=") : addToken(Token::GREATER, ">");
+		match('=') ? addToken(Token::GREATER_EQUAL, Range(size, start, current)) : addToken(Token::GREATER, single);
 		break;
-	case '+':addToken(Token::PLUS, "+"); break;
-	case '-':addToken(Token::MINUS, "-"); break;
-	case '*':addToken(Token::STAR, "*"); break;
-	case '/':addToken(Token::SLASH, "/"); break;
-	case ':':addToken(Token::COLON, ":"); break;
-	case '%':addToken(Token::MODULO, "%"); break;
+	case '+':addToken(Token::PLUS, single); break;
+	case '-':addToken(Token::MINUS, single); break;
+	case '*':addToken(Token::STAR, single); break;
+	case '/':addToken(Token::SLASH, single); break;
+	case ':':addToken(Token::COLON, single); break;
+	case '%':addToken(Token::MODULO, single); break;
 	case '!':
-		match('=') ? addToken(Token::ISDIFERENT, "!=") : addToken(Token::BANG, "!");
+		match('=') ? addToken(Token::ISDIFERENT, Range(size, start, current)) : addToken(Token::BANG, single);
 		break;
 	case '=':
-		match('=') ? addToken(Token::ISEQUAL, "==") : addToken(Token::EQUAL, "=");
+		match('=') ? addToken(Token::ISEQUAL, Range(size, start, current)) : addToken(Token::EQUAL, single);
 		break;
 	case ';':
-		addToken(Token::EOL, ";");
-		line++;
+		addToken(Token::EOL, single);
 		break;
 	case ' ':break;
 	case '\t':break;
@@ -138,10 +144,11 @@ void Scanner::getToken() {
 	}
 }
 std::vector<Token> Scanner::scanTokens() {
+	size = source.length();
 	while (!isAtEnd())
 	{
 		getToken();
 	}
-	addToken(Token::EOFL, "EOF");
+	addToken(Token::EOFL, Range(size,size,size));
 	return TokenStream;
 };

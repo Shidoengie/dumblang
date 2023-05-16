@@ -14,8 +14,7 @@ public:
 private:
 	std::string source;
 	int current;
-	int line;
-	
+	size_t size;
 	std::vector<Token> TokenStream;
 	
 	char8_t advance();
@@ -23,7 +22,7 @@ private:
 	char8_t peek();
 	char8_t peekNext();
 	bool match(char8_t expected);
-	void addToken(Token::Type type, std::variant<double, std::string> lexeme);
+	void addToken(Token::Type type, Range lexeme);
 	void num(char8_t LastChar);
 	void str();
 	void identifier(char8_t LastChar);

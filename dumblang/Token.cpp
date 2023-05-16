@@ -5,14 +5,8 @@
 #include <map>
 #include <string>
 
-
-std::string Token::stringify(std::variant<double, std::string> const& value) {
-    if (double const* pval = get_if<double>(&value))
-        return std::to_string(*pval);
-    return get<std::string>(value);
-}
 std::string Token::toString() {
-	return "type:" + mapToken(type) + " |lexeme: " + stringify(lexeme) + " |line:" + std::to_string(line);
+	return "type:" + mapToken(type) + " |lexeme: " + std::to_string(lexeme.start)+ ":" + std::to_string(lexeme.stop);
 }
 std::map<std::string, Token::Type> GetKeywordMap() {
     std::map<std::string, Token::Type> KeywordMap = {

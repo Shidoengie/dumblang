@@ -4,6 +4,7 @@
 #include <vector>
 #include <map>
 #include <string>
+#include "range.h"
 
 class Token
 {
@@ -54,17 +55,12 @@ public:
         VAR
     };
     Token::Type type;
-    std::variant<double, std::string> lexeme;
-    int line;
-    
+    Range lexeme;
     std::string toString();
-    Token(Token::Type _type, std::variant<double, std::string> _lexeme, int _line) {
+    Token(Token::Type _type, Range _lexeme) : lexeme(_lexeme) {
         type = _type;
         lexeme = _lexeme;
-        line = _line;
     }
-private:
-    std::string stringify(std::variant<double, std::string> const& value);
 };
 
 std::map <std::string, Token::Type> GetKeywordMap();

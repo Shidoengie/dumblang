@@ -1,6 +1,6 @@
 #include "Parser.h"
-#include "AstNodes.h"
 #include "Token.h"
+#include "Interpreter.h"
 
 void ParseTokens(std::vector<Token> stream) {
 	for (Token& token : stream)

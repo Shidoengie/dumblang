@@ -7,6 +7,7 @@ Range::Range(size_t max_) {
     stop = 0;
     max = max_;
 }
+
 Range::Range(size_t max_, size_t start_, size_t stop_) {
     
     if (start_ > stop_) {
@@ -14,12 +15,17 @@ Range::Range(size_t max_, size_t start_, size_t stop_) {
     }
     if (start_ > max_ || stop_ > max_) {
         std::ostringstream out;
-        out << "range greater then max" << "range greater then max" << max_;
+        out << "range greater then max Range: "this->to_string();
         throw InvalidRangeError(out.str());
     }
     max = max_;
     start = start_;
     stop = stop_;
+}
+std::string Range::to_string(Range range) {
+    std::ostringstream out;
+    out << "max:" << max << " start:"<<start<<" stop:"<<stop;
+    return out.str();
 }
 void Range::setRange(size_t start_, size_t stop_) {
     if (start_ > stop_) {
@@ -38,5 +44,5 @@ std::optional<std::string> Range::splice(std::string source) {
     if (max > source.length()) {
         return {};
     }
-    return std::string(&source[start], &source[stop + 1]);
+    return source.substr(start,stop);
 }

@@ -22,6 +22,7 @@ public:
 	size_t max;
 	Range(size_t max_);
 	Range(size_t max_, size_t start_, size_t stop_);
+	std::string to_string();
     void setRange(size_t start_, size_t stop_);
 	std::vector<size_t> AsVec();
 	std::optional<std::string> splice(std::string source);

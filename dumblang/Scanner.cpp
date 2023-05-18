@@ -91,7 +91,7 @@ void Scanner::identifier(char8_t LastChar) {
 void Scanner::getToken() {
 	int start = current;
 	char8_t LastChar = advance();
-	auto single = Range(source.length());
+	auto single = Range(size, start, current);
 	// Skip any whitespace.
 	switch (LastChar)
 	{

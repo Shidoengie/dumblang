@@ -25,7 +25,7 @@ struct Break {};
 struct NoneType {};
 struct BlockEnd {};
 using Control = std::variant< Return, Break>;
-using Value = std::variant< NoneType, double, std::string, Function, BuiltinFunc,Control> ;
+using Value = std::variant< NoneType, double,bool, std::string, Function, BuiltinFunc,Control> ;
 
 using Node = std::variant<
 	Value, BinaryNode, UnaryNode,
@@ -35,8 +35,8 @@ using Node = std::variant<
 >;
 using NodeStream = std::vector<Node>;
 using ValueStream = std::vector<Value>;
-
 std::string ValueToString(Value val);
+static const std::vector<std::string> typeMap = { "None","double","bool","string","Function","BuiltinFunc","Control"};
 struct BinaryNode {
 	enum Type{
 		ADD,

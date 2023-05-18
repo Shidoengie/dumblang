@@ -27,9 +27,6 @@
     <ClCompile Include="Scanner.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="ShlangError.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="AstNodes.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>

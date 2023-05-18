@@ -105,14 +105,13 @@ class InvalidTypeError : public InterpreterError {
 public:
 	Value specifiedType;
 	Value exceptedType;
-	const std::vector<std::string> typeMap = {"None","double","string","Function","FunctionCall","BuiltinFunc","Control" };
 	virtual const char* what() const noexcept override {
 		return msg.c_str();
 	};
 	InvalidTypeError(Value specifiedType_, Value exceptedType_) {
 		this->specifiedType = specifiedType_;
 		this->exceptedType = exceptedType_;
-		msg = ("Invalid Type expected: < " + typeMap[exceptedType.index()] + " > got: <" + typeMap[specifiedType.index()] + " >");
+		msg = ("Invalid Type expected: <" + typeMap[exceptedType.index()] + "> got: <" + typeMap[specifiedType.index()] + ">");
 	};
 
 };
@@ -120,8 +119,6 @@ class MixedTypesError : public InterpreterError {
 public:
 	ValueStream specifiedType;
 	ValueStream exceptedType;
-	
-	std::vector<std::string> typeMap = { "None","double","string","Function","FunctionCall","BuiltinFunc","Control" };
 	virtual const char* what() const noexcept override {
 		
 		return msg.c_str();
@@ -136,7 +133,6 @@ public:
 class InvalidCallError : public InterpreterError {
 public:
 	Value specifiedType;
-	std::vector<std::string> typeMap = { "None","double","string","Function","FunctionCall","BuiltinFunc","Control"};
 	virtual const char* what() const noexcept override {
 		
 		return msg.c_str();

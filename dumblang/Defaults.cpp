@@ -10,6 +10,14 @@ Value PrintBuiltin(ValueStream arguments) {
 		if (variantHas<double>(argument)) {
 			cout << std::get<double>(argument) << '\n';
 		}
+		if (auto num = std::get_if<bool>(&argument)) {
+			if (*num) {
+				cout << "true" << "\n";
+			}
+			else {
+				cout << "false" << "\n";
+			}
+		}
 	}
 	return NoneType();
 }
@@ -38,11 +46,33 @@ bool BoolConvert(double val) {
 	bool out = (val != 0.0) ? true : false;
 	return out;
 };
+std::optional<bool> ValToBool(Value val) {
+	if (auto num = std::get_if<double>(&val)) {
+		return BoolConvert(*num);
+	}
+	else if (auto num = std::get_if<bool>(&val)) {
+		return *num;
+	}
+	else {
+		return {};
+	}
+};
+std::optional<double> ValToNum(Value val) {
+	if (auto num = std::get_if<double>(&val)) {
+		return *num;
+	}
+	else if(auto num = std::get_if<bool>(&val)) {
+		return (double)*num;
+	}
+	else {
+		return {};
+	}
+}
 std::map<std::string, Value> getDefaultVarMap() {
 	return {
 		{"Test",2.0},
 		{"PI",3.146210},
-		{"strToNum",BuiltinFunc(&StringToNum,1)},
+		{"str_num",BuiltinFunc(&StringToNum,1)},
 		{"print",BuiltinFunc(&PrintBuiltin,-1)},
 		{"input",BuiltinFunc(&InputBuiltin,1)}
 	};

@@ -21,8 +21,6 @@ Value Interpreter::UnwrapReturnValue(Value result) {
 	}
 	return result;
 }
-
-
 void Interpreter::EvalDeclaration(Declaration request) {
 	Value assVal = UnwrapReturnValue(EvalNode(*request.value));
 	current.define(request.varName, EvalNode(assVal));
@@ -75,10 +73,12 @@ Value Interpreter::EvalBlock(Block block) {
 	return NoneType();
 };
 
-
-double Interpreter::numCalc(BinaryNode::Type opType, double leftValue, double rightValue) {
-	bool leftBool = BoolConvert(leftValue);
-	bool rightBool = BoolConvert(rightValue);
+Value Interpreter::numCalc(BinaryNode::Type opType, Value left, Value right) {
+	
+	double leftValue = *ValToNum(left);
+	double rightValue = *ValToNum(right);
+	bool leftBool = *ValToBool(left);
+	bool rightBool = *ValToBool(right);
 	switch (opType)
 	{
 	case BinaryNode::ADD:
@@ -97,28 +97,28 @@ double Interpreter::numCalc(BinaryNode::Type opType, double leftValue, double ri
 		return fmod(leftValue, rightValue);
 		break;
 	case BinaryNode::AND:
-		return (double)(leftBool && rightBool);
+		return (bool)(leftBool && rightBool);
 		break;
 	case BinaryNode::OR:
-		return (double)(leftBool || rightBool);
+		return (bool)(leftBool || rightBool);
 		break;
 	case BinaryNode::ISEQUAL:
-		return (double)(leftValue == rightValue);
+		return (bool)(leftValue == rightValue);
 		break;
 	case BinaryNode::ISDIFERENT:
-		return (double)(leftValue == rightValue);
+		return (bool)(leftValue == rightValue);
 		break;
 	case BinaryNode::GREATER:
-		return (double)(leftValue > rightValue);
+		return (bool)(leftValue > rightValue);
 		break;
 	case BinaryNode::GREATER_EQUAL:
-		return (double)(leftValue >= rightValue);
+		return (bool)(leftValue >= rightValue);
 		break;
 	case BinaryNode::LESSER:
-		return (double)(leftValue < rightValue);
+		return (bool)(leftValue < rightValue);
 		break;
 	case BinaryNode::LESSER_EQUAL:
-		return (double)(leftValue <= rightValue);
+		return (bool)(leftValue <= rightValue);
 		break;
 	default:
 		break;
@@ -131,22 +131,22 @@ Value Interpreter::strCalc(BinaryNode::Type opType, string leftValue, string rig
 		return leftValue + rightValue;
 		break;
 	case BinaryNode::ISEQUAL:
-		return (double)(leftValue == rightValue);
+		return (bool)(leftValue == rightValue);
 		break;
 	case BinaryNode::ISDIFERENT:
-		return (double)(leftValue != rightValue);
+		return (bool)(leftValue != rightValue);
 		break;
 	case BinaryNode::GREATER:
-		return (double)(leftValue > rightValue);
+		return (bool)(leftValue > rightValue);
 		break;
 	case BinaryNode::GREATER_EQUAL:
-		return (double)(leftValue >= rightValue);
+		return (bool)(leftValue >= rightValue);
 		break;
 	case BinaryNode::LESSER:
-		return (double)(leftValue < rightValue);
+		return (bool)(leftValue < rightValue);
 		break;
 	case BinaryNode::LESSER_EQUAL:
-		return (double)(leftValue <= rightValue);
+		return (bool)(leftValue <= rightValue);
 		break;
 	default:
 		break;
@@ -167,12 +167,14 @@ Value Interpreter::EvalUnaryNode(UnaryNode unaryOp) {
 		}
 		throw InvalidTypeError(obj, Number);
 		break;
-	case UnaryNode::NOT:
-		if (auto val = std::get_if<double>(&obj)) {
-			bool out = BoolConvert(*val);
-			return (double)(!out);
+	case UnaryNode::NOT:{
+		std::optional<bool> out = ValToBool(obj);
+		if (!out) {
+			throw InvalidTypeError(obj, Number);
 		}
-		throw InvalidTypeError(obj, Number);
+		return !(*out);
+		break;
+	}
 	default:
 		break;
 	}
@@ -190,8 +192,8 @@ Value Interpreter::EvalBinaryNode(BinaryNode binOp) {
 		}
 		throw MixedTypesError({leftValue,rightValue},{Number,Number});
 	}
-	if (variantHas<double>(leftValue)) {
-		return numCalc(binOp.type, std::get<double>(leftValue), std::get<double>(rightValue));
+	if (variantHas<double>(leftValue) || variantHas<bool>(leftValue)) {
+		return numCalc(binOp.type, leftValue, rightValue);
 	}
 	if (variantHas<string>(leftValue)) {
 		return strCalc(binOp.type, std::get<string>(leftValue), std::get<string>(rightValue));
@@ -245,11 +247,11 @@ Value Interpreter::EvalCall(Call request) {
 }
 Value Interpreter::EvalBranch(BranchNode branch) {
 	Value conditionVal = EvalNode(*branch.condition);
-	if (!variantHas<double>(conditionVal)) {
-
+	auto isNum = ValToBool(conditionVal);
+	if (!isNum) {
 		throw InvalidTypeError(conditionVal, Number);
 	}
-	bool condition = BoolConvert(std::get<double>(conditionVal));
+	bool condition = *isNum;
 	if (branch.ifBlock == nullptr) {
 		throw InvalidBranchFormatError();
 	}
@@ -267,11 +269,11 @@ Value Interpreter::EvalWhile(WhileNode loop) {
 	bool condition = true;
 	while (true) {
 		Value conditionVal = EvalNode(*loop.condition);
-		if (!variantHas<double>(conditionVal)) {
-			throw InvalidTypeError(Number,conditionVal);
-			break;
+		auto isNum = ValToBool(conditionVal);
+		if (!isNum) {
+			throw InvalidTypeError(conditionVal, Number);
 		}
-		condition = BoolConvert(std::get<double>(conditionVal));
+		bool condition = *isNum;
 		if (!condition) {
 			break;
 		}

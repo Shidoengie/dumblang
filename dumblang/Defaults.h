@@ -9,4 +9,6 @@ Value PrintBuiltin(NodeStream arguments);
 Value InputBuiltin(NodeStream arguments);
 Value StringToNum(NodeStream arguments);
 bool BoolConvert(double val);
+std::optional<bool> ValToBool(Value val);
+std::optional<double> ValToNum(Value val);
 std::map<std::string, Value> getDefaultVarMap();

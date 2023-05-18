@@ -17,7 +17,7 @@ private:
 	Value EvalAssignment(Assignment ass);
 	Value EvalVariable(Variable var);
 	Value EvalBlock(Block block);
-	double numCalc(BinaryNode::Type opType, double leftValue, double rightValue);
+	Value numCalc(BinaryNode::Type opType, Value left, Value right);
 	Value strCalc(BinaryNode::Type opType, string leftValue, string rightValue);
 	Value EvalUnaryNode(UnaryNode unaryOp);
 	Value EvalBinaryNode(BinaryNode binOp);

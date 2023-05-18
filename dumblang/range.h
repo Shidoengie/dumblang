@@ -3,6 +3,7 @@
 #include <exception>
 #include <vector>
 #include <optional>
+#include <sstream>
 class InvalidRangeError : public std::exception {
 public:
 

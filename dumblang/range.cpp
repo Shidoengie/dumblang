@@ -13,9 +13,9 @@ Range::Range(size_t max_, size_t start_, size_t stop_) {
         throw InvalidRangeError("start is greater then stop");
     }
     if (start_ > max_ || stop_ > max_) {
-        char out[];
+        std::ostringstream out;
         out << "range greater then max" << "range greater then max" << max_;
-        throw InvalidRangeError();
+        throw InvalidRangeError(out.str());
     }
     max = max_;
     start = start_;

@@ -88,7 +88,7 @@ void langTest() {
     }
 }
 int main(int argc, char* argv[]) {
-    RPL();
+    langTest();
     return 0;
 
 }

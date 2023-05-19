@@ -1,8 +1,28 @@
 #include "Parser.h"
 #include "Token.h"
 #include "Interpreter.h"
+static std::string source;
+static std::vector<Token> stream;
+int current = 0;
 
-void ParseTokens(std::vector<Token> stream) {
+using Kind = Token::Type;
+
+std::string text(Token token) {
+	return *token.lexeme.splice(source);
+}
+Kind advance() {
+
+	Kind last = stream[current].type;
+	current++;
+	return last;
+}
+Kind peek() {
+	return stream[current].type;
+}
+bool current_has(Kind expected) {
+	return peek() == expected;
+}
+void parse_tokens() {
 	for (Token& token : stream)
 	{
 		switch (token.type){
@@ -12,4 +32,7 @@ void ParseTokens(std::vector<Token> stream) {
 			break;
 		}
 	}
+}
+void parse_num_range(Token literal) {
+	literal.lexeme.splice(source);
 }

@@ -44,14 +44,13 @@ void Scanner::addToken(Token::Type type, Range lexeme)
 	TokenStream.push_back(token);
 }
 void Scanner::num(char8_t LastChar) {
-	size_t start = current;
+	size_t start = current-1;
 	do {
 		LastChar = advance();
 	} while (isdigit(LastChar) || LastChar == '.');
-	size_t stop = current;
 	current--;
-	addToken(Token::NUM, Range(size,start,stop));
-}
+	addToken(Token::NUM, Range(size,start,current));
+}	
 
 void Scanner::str() {
 	
@@ -70,15 +69,14 @@ void Scanner::str() {
 }
 void Scanner::identifier(char8_t LastChar) {
 	std::string endStr;
-	size_t start = current;
+	size_t start = current-1;
 	do {
 		
 		endStr += LastChar;
 		LastChar = advance();
 	} while (isalnum(LastChar));
-	auto identSlice = Range(size, start, current);
 	current--;
-	
+	auto identSlice = Range(size, start, current);
 	auto splice = identSlice.splice(source);
 	
 	if (GetKeywordMap().contains(*splice)) {

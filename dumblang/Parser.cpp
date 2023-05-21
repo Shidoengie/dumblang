@@ -1,6 +1,5 @@
 #include "Parser.h"
-#include "Token.h"
-#include "Interpreter.h"
+#include "Defaults.h"
 static std::string source;
 static std::vector<Token> stream;
 int current = 0;
@@ -8,31 +7,33 @@ int current = 0;
 using Kind = Token::Type;
 
 std::string text(Token token) {
-	return *token.lexeme.splice(source);
+	auto res = token.lexeme.splice(source);
+	if (res) {
+		return *res;
+	}
+	throw UnspecifiedError("idk");
 }
-Kind advance() {
-
-	Kind last = stream[current].type;
+Kind Advance() {
 	current++;
-	return last;
+	Kind token = stream[current].type;
+	return token;
 }
-Kind peek() {
+Kind Peek() {
 	return stream[current].type;
 }
-bool current_has(Kind expected) {
-	return peek() == expected;
+bool CurrentHas(Kind expected) {
+	return Peek() == expected;
 }
-void parse_tokens() {
-	for (Token& token : stream)
-	{
-		switch (token.type){
-		case Token::NUM:
-			
-		default:
-			break;
-		}
+Node ParseTokens() {
+	auto left = Peek();
+	switch (left) {
+
+	case Token::NUM:
+
+	default:
+		break;
 	}
 }
-void parse_num_range(Token literal) {
+void ParseNumRange(Token literal) {
 	literal.lexeme.splice(source);
 }
